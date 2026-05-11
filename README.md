@@ -24,6 +24,7 @@ commands/
 | Skill | 一句話 |
 |---|---|
 | [graphify](skills/shared/graphify/) | 任意資料夾 → 知識圖譜（互動 HTML + JSON + 稽核報告） |
+| [html-artifacts](skills/shared/html-artifacts/) | 判斷何時把 Agent 輸出升級成自包含 HTML artifact，而不是每次都用 HTML |
 | [find-skills](skills/shared/find-skills/) | 在 skill 生態裡搜尋與安裝可重用的 skill |
 
 ### claude
