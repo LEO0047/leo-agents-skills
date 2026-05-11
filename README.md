@@ -35,8 +35,12 @@ commands/
 | Skill | 一句話 |
 |---|---|
 | [chronicle](skills/codex/chronicle/) | 讓 agent 看到使用者螢幕近幾小時的滾動緩衝 |
+| [game-mod-management](skills/codex/game-mod-management/) | 遊戲 mod repo 與本機流程管理，特別是 BG3 存檔救援、manifest、load order 與驗證 |
+| [game-modops-agent](skills/codex/game-modops-agent/) | Game ModOps v3 Windows 控制塔，協調 Nexus、Vortex、Wabbajack、MO2、LOOT 與 BG3 工具 |
 | [hatch-pet](skills/codex/hatch-pet/) | 從角色概念或參考圖製作 Codex 寵物動畫 spritesheet |
+| [nexus-mod-automation](skills/codex/nexus-mod-automation/) | 安全自動化 Nexus Mods / Vortex 下載佇列、監控、壓縮檔檢查與報告 |
 | [playwright](skills/codex/playwright/) | 終端機驅動真實瀏覽器做自動化 |
+| [windows-ui-automation](skills/codex/windows-ui-automation/) | 透過 PowerShell UI Automation 操作 Windows 桌面應用與控制項 |
 
 ### commands
 | Command | 平台 |

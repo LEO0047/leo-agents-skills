@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nexus Mod Automation"
+  short_description: "Automate Nexus/Vortex mod download checks."
+  default_prompt: "Use $nexus-mod-automation to queue Nexus downloads through Vortex, monitor downloads, inspect archives, and report safe mod candidates."

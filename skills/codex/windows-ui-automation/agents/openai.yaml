@@ -1,0 +1,6 @@
+interface:
+  display_name: "Windows UI Automation"
+  short_description: "Inspect and control Windows desktop apps with built-in UI Automation."
+  default_prompt: "Use $windows-ui-automation to inspect a Windows desktop app and click the requested control."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,3 @@
+display_name: Game ModOps Agent
+short_description: Build and run safe attended GUI automation for BG3 and Skyrim mod workflows.
+default_prompt: Set up or operate a Windows Game ModOps workstation in safe assisted mode.

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Game Mod Management"
+  short_description: "Recover BG3 save mods, verify UUIDs, manage backups, manifests, and load orders."
+  default_prompt: "Use $game-mod-management to recover a BG3 save's missing mods, verify installed UUIDs, and rebuild modsettings safely."
+
+policy:
+  allow_implicit_invocation: true
