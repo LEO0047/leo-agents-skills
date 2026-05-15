@@ -10,7 +10,15 @@ tags: [html, artifacts, output-format, review, handoff]
 
 # html-artifacts
 
-Choose HTML only when it materially improves human review, comparison, visualization, handoff, or interaction. Keep Markdown as the default for short, durable, and human-edited text.
+Choose HTML when it materially improves human review, comparison, visualization, handoff, or interaction. Keep Markdown as the default for short, durable, agent-facing, and human-edited text.
+
+## Audience split
+
+- **User-facing reference outputs**: prefer self-contained `.html` for long comparisons, dashboards, handoff docs, model/runtime status pages, tuning reports, visual summaries, and anything the user is meant to open and read repeatedly.
+- **Agent-facing operating docs**: prefer `.md` for AGENTS.md-style rules, memory notes, skills, commands, handoff prompts, implementation instructions, and other durable docs that another agent should parse or edit.
+- **Short chat replies**: keep Markdown in the conversation.
+- On Leo's Windows machine, when a user-facing HTML artifact needs an established local style, follow the style currently exemplified by `C:\Users\leo04\OneDrive\桌面\LLM模型設定.html`. Treat that file as an example, not a required dependency: dark operational dashboard, compact cards, section headers, evidence tables, verification notes, and next directions.
+- Do not convert third-party README files, model cards, generated transcripts, reasoning logs, or external tool docs just to satisfy the HTML preference.
 
 ## Decision rule
 
@@ -18,6 +26,7 @@ Default to Markdown unless at least one condition is true:
 
 - The output will likely exceed about 100 lines and needs navigation.
 - The user needs to compare options side by side.
+- The output is primarily for the user to read repeatedly as a reference, status page, dashboard, or handoff artifact.
 - The task is a PR review, annotated diff, risk map, module map, or architecture walkthrough.
 - The content benefits from diagrams, timelines, tables with visual priority, color-coded severity, UI mockups, or design tokens.
 - The user needs to tune, sort, triage, preview, or edit structured data interactively.
@@ -27,6 +36,8 @@ Do not use HTML for:
 
 - Short answers, status updates, ordinary final responses, or simple command output.
 - README, AGENTS.md, SKILL.md, commit messages, PR descriptions, or other durable text expected to stay hand-editable.
+- Agent-facing rules, memory notes, skills, command docs, or handoff prompts.
+- Third-party README files, model cards, generated transcripts, reasoning logs, and external tool docs.
 - Simple patch summaries where Markdown is easier to diff.
 - User requests that explicitly ask for Markdown, plain text, JSON, or another format.
 
@@ -40,6 +51,7 @@ When producing an HTML artifact:
 - Include `TL;DR`, `Files read / evidence`, risks, verification, and A/B/C next directions when relevant.
 - Use semantic sections, accessible labels, keyboard-friendly controls, and enough contrast.
 - Keep generated HTML as an output artifact, not as the canonical source for long-term prose when Markdown would be easier to maintain.
+- For Leo's local dashboard-style artifacts, match the extracted style of the desktop example: section heads, compact cards/tables, status labels, verification, and A/B/C next directions. Do not depend on the desktop file continuing to exist.
 
 ## Interaction requirements
 

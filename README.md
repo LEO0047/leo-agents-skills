@@ -4,6 +4,16 @@ Leo 的個人精選 agent skill 倉庫，跨 Claude Code、Codex 等不同平台
 
 收錄的不是「全部」，而是**自己覺得有價值、會反覆用到、值得跨機器同步**的那些。
 
+## 輸出格式規則
+
+- 給 Leo 主要閱讀、比較、交接、長期參考的輸出，優先做成 self-contained HTML。
+- 給 agent 主要讀取、接手、解析、維護的規則與操作文件，優先使用 `.md`。
+- 短回覆、一般狀態更新、PR 文字、commit message、AGENTS.md、SKILL.md、README 仍維持 Markdown。
+- 本機使用者向 HTML artifact 可參考桌面 `LLM模型設定.html` 目前示範出的風格，但不要依賴該檔永久存在；耐久規則是深色操作面板、section heading、卡片、表格、驗證與後續方向。
+- 不為了套格式去改第三方 README、模型卡、generated transcript、reasoning log 或外部工具文件。
+
+完整規則見 [`OUTPUT_FORMAT_POLICY.md`](OUTPUT_FORMAT_POLICY.md)。
+
 ## 倉庫結構
 
 ```
