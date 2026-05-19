@@ -12,6 +12,8 @@ Use this as the primary skill for `D:\Games\game-modops`. It is the v3 mother sk
 
 `nexus-mod-automation` remains the helper skill for Nexus/Vortex download queues, Vortex download monitoring, and archive inspection. `game-mod-management` remains the helper skill for BG3 UUID, save recovery, manifests, and load-order notes. This skill is the final authority for workspace safety, owner-tool decisions, backups, previews, confirmations, and write gates.
 
+For `RAID: Shadow Legends` live gameplay, delegate to `raid-shadow-legends-ops` first. That specialized skill owns the faster RAID-specific Computer Use workflow, Traditional Chinese champion naming, dungeon progression, artifact upgrade controls, low-level champion leveling, and safe stop rules.
+
 ## Core Contract
 
 Treat the workspace as a ModOps control tower, not a modpack and not a replacement mod manager.
