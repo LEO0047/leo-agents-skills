@@ -26,6 +26,15 @@ Treat the workspace as a ModOps control tower, not a modpack and not a replaceme
 - Do not commit `.pak`, archives, plugins, third-party executables, downloaded DLLs, downloaded scripts, models, textures, audio, secrets, cookies, account data, or manager state payloads.
 - Do not rewrite Vortex, MO2, or BG3MM behavior in ad hoc scripts when the manager should own the action.
 
+## RAID: Shadow Legends Language Policy
+
+When operating or advising on `RAID: Shadow Legends`, match the user's Chinese game UI.
+
+- Use Traditional Chinese champion names in user-facing recommendations and action reports, for example `凱爾`, `菲恩`, `歸魂納爾瑪`, and `流浪者愛麗絲`.
+- Keep English champion names only when needed for web searches, source citation, disambiguation, or one-time parenthetical mapping.
+- If an English guide name is discovered first, map it back to the visible Chinese UI name before telling the user who to train, equip, upgrade, or skip.
+- Do not ask the user to identify a champion by English name when the visible UI is Chinese; use screenshots or visible Chinese names instead.
+
 ## Codex Integration Policy
 
 This is a Codex-first workflow. Do not add other assistant desktop configuration as the operating path for this workspace.
