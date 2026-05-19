@@ -72,6 +72,24 @@ When the user says to run timed/event dungeons or "打到打不過":
 5. Track the last cleared stage, visible energy, and notable level-ups.
 6. Stop on defeat, payment/resource prompts, or user interruption.
 
+## Session Checkpoints
+
+Before resuming an interrupted RAID session, check for the latest RAID handoff/checkpoint notes in:
+
+```text
+/Users/leo/.codex/memories/extensions/ad_hoc/notes/
+```
+
+Look for filenames matching `*raid*checkpoint*.md`, `*raid*session*.md`, or `*raid*maintenance*.md`. Treat the newest relevant note as the current temporary gameplay state. These notes may contain last cleared stages, failed stages, maintenance status, visible resources, and user-adjusted team constraints.
+
+Known current checkpoint file from this workflow:
+
+```text
+/Users/leo/.codex/memories/extensions/ad_hoc/notes/20260519-191242-raid-maintenance-session-checkpoint.md
+```
+
+Do not commit these ad-hoc checkpoint notes to the skill repo. They are local session memory, while this skill stores durable operating rules.
+
 Current remembered RAID priorities from this account:
 
 - Core carry: `流浪者愛麗絲`.
