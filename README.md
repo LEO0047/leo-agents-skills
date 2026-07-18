@@ -28,6 +28,16 @@ commands/
 
 詳細規範見 [`docs/SKILL_SPEC.md`](docs/SKILL_SPEC.md)。
 
+## Repository 驗證
+
+新增或更新 skill 後執行：
+
+```bash
+ruby scripts/validate-repo.rb
+```
+
+檢查範圍包含 frontmatter、`compat` 與 bucket 一致性、skill 名稱、YAML、相對連結、README 索引，以及 shell script 的執行權限與語法。
+
 ## 現有 skill 索引
 
 ### shared （跨平台）
@@ -46,11 +56,14 @@ commands/
 | Skill | 一句話 |
 |---|---|
 | [chronicle](skills/codex/chronicle/) | 讓 agent 看到使用者螢幕近幾小時的滾動緩衝 |
+| [frontend-design](skills/codex/frontend-design/) | Anthropic 設計原則的 Codex 版本，加入本機 frontend delivery quality gate |
 | [game-mod-management](skills/codex/game-mod-management/) | 遊戲 mod repo 與本機流程管理，特別是 BG3 存檔救援、manifest、load order 與驗證 |
 | [game-modops-agent](skills/codex/game-modops-agent/) | Game ModOps v3 Windows 控制塔，協調 Nexus、Vortex、Wabbajack、MO2、LOOT 與 BG3 工具 |
 | [hatch-pet](skills/codex/hatch-pet/) | 從角色概念或參考圖製作 Codex 寵物動畫 spritesheet |
 | [nexus-mod-automation](skills/codex/nexus-mod-automation/) | 安全自動化 Nexus Mods / Vortex 下載佇列、監控、壓縮檔檢查與報告 |
+| [openai-frontend-design](skills/codex/openai-frontend-design/) | 以 OpenAI 原生生圖補強前端美術，同時保留功能性小 icon 的向量優勢 |
 | [playwright](skills/codex/playwright/) | 終端機驅動真實瀏覽器做自動化 |
+| [raid-shadow-legends-ops](skills/codex/raid-shadow-legends-ops/) | 透過繁體中文 RAID UI 執行安全、具停損規則的日常與戰鬥操作 |
 | [windows-ui-automation](skills/codex/windows-ui-automation/) | 透過 PowerShell UI Automation 操作 Windows 桌面應用與控制項 |
 
 ### commands
@@ -70,6 +83,8 @@ ln -s "$(pwd)/skills/claude/codex-handoff" ~/.claude/skills/codex-handoff
 # Codex 同理
 ln -s "$(pwd)/skills/shared/find-skills" ~/.codex/skills/find-skills
 ln -s "$(pwd)/skills/codex/chronicle" ~/.codex/skills/chronicle
+ln -s "$(pwd)/skills/codex/frontend-design" ~/.codex/skills/frontend-design
+ln -s "$(pwd)/skills/codex/openai-frontend-design" ~/.codex/skills/openai-frontend-design
 ```
 
 未來會補一支 `scripts/install.sh` 自動處理（symlink 模式）。
