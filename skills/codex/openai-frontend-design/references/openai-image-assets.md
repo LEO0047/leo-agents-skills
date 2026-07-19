@@ -1,127 +1,176 @@
-# OpenAI Narrative Image Workflow
+# OpenAI Narrative Image Asset Workflow
 
-Use this reference after the base frontend direction and narrative image plan are known and before making image-generation calls. It covers coordinated website backgrounds and scenes as well as isolated assets.
+Use this reference after the Visual Genome and page narrative are defined and before making image-generation calls. It covers coordinated environments, integrated heroes, textures, and isolated assets. The rendered website remains the acceptance target.
 
-## Site-wide visual bible
+## Shared visual bible
 
-Write one compact shared prompt block before individual image prompts:
+Write one compact shared block before asset-specific prompts:
 
 ```text
 Website promise: [single product or brand idea the journey must make believable].
 Audience and desired action: [who, what they need, and the conversion].
-Emotional arc: [opening feeling → evidence/trust → final action].
-Visual world: [palette, materials, environment, lighting direction, camera language, depth, texture].
+Emotional arc: [opening feeling -> evidence/trust -> final action].
+Visual Genome: [physical world; graphic language; display medium; motion grammar; primary/supporting image transformation].
+Realism mode: [documentary, commercial photography, architectural editorial, high-end photoreal CG, or another explicit finish].
+Physical-world thesis: [what exists, how it is built and supported, scale evidence, wear, and practical light].
 Signature motif: [one recurring form, object, light, or framing device].
-Continuity rules: [what must remain consistent across hero, sections, and footer].
-Forbidden elements: [styles, objects, text, UI, or visual clichés that would break the product truth].
+Continuity rules: [what remains consistent across sections and what deliberately changes].
+Copy constraints: [approved wording, punctuation, fixed line groups, and no-orphan behavior].
+Forbidden elements: [bundle reuse, transfers, fake UI/data, effects, or clichés that break product truth].
 ```
 
-Reuse this block in every relevant prompt, then add the section-specific narrative job and composition. Continuity should come from shared visual decisions, not from repeating the same image.
+Reuse the block across related prompts, then add the section job and composition. Continuity comes from shared decisions, not repeated near-identical images.
 
-## Asset manifest template
+## Reference hierarchy
 
-```markdown
-| id | role | display_size | interactive | recolorable | backgrounds | semantics | medium | section_job | text_safe_area | continuity | reason |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| hero-environment | background scene | 1440×900 → mobile crop | no | no | self | decorative | generated-raster | establish promise and visual world | left 42% quiet for heading and CTA | shared light and material motif begins here | Environmental storytelling makes the product promise tangible. |
-| onboarding-orbit | empty state | 240–360px | no | no | light + dark | meaningful: "No projects yet" | generated-raster | explain the empty state | none | reuse the hero's material and light direction | A distinctive product-world illustration communicates the empty state. |
-| close-dialog | control icon | 20px | yes | yes | mixed | decorative; button has an accessible name | vector | dismiss dialog | none | standard control styling | It must remain crisp, themeable, and state-aware. |
-| workspace-category | category icon | 64px | yes | no | light + dark | meaningful: category name | compare | help category recognition | none | reuse restrained signature motif | Branding may benefit from generated material, but small-size legibility must win. |
-```
+Classify every supplied image before generation:
 
-Keep only assets that have a real product role. Do not generate decorative filler merely because image generation is available.
+1. `primary-anchor`: strongest approved finish and compositional preference;
+2. `secondary-anchor`: supporting environment, scale, or presentation language;
+3. `supporting-reference`: one explicitly named transferable property;
+4. `negative-reference`: failures that become forbidden elements.
 
-## Medium decision guide
+Use local references through `referenced_image_paths` when the native tool supports them. State that they are visual-language references only. Do not transfer people, faces, bodies, costumes, logos, labels, text, measurements, social-media UI, layout, or unrelated objects unless separately requested and appropriate.
 
-Choose `vector` when most of these are true:
+Extract only relevant signals: realism mode, contrast, black level, highlight roll-off, color temperature, material response, wear, camera distance, lens feel, framing, depth, practical light, atmosphere, and the boundary between realism and stylization.
 
-- The asset is a familiar functional symbol.
-- It appears around `12–32px`.
-- It needs `currentColor`, theme recoloring, stroke changes, or multiple interaction states.
-- Pixel alignment, instant loading, or CSS animation matters more than material richness.
+## Asset manifest
 
-Choose `generated-raster` when most of these are true:
+Record one row per planned visual:
 
-- Material, lighting, character, depth, atmosphere, or worldbuilding carries product meaning.
-- The asset is a hero, mascot, empty state, card art, branded spot illustration, texture, or product mockup.
-- It is large enough for generated detail to survive rendering.
-- It does not need arbitrary recoloring or shape morphing.
+| Field | Meaning |
+|---|---|
+| `id` | Stable purpose-led identifier |
+| `role` | Background scene, integrated hero, isolated object, transition, empty state, card art, texture, control icon, or another real UI role |
+| `display_size` | Intended CSS size or responsive range |
+| `interactive` | Whether it represents or changes state |
+| `recolorable` | Whether theme or CSS recoloring is required |
+| `backgrounds` | Light, dark, mixed, image, self-contained, or transparent surfaces |
+| `section_job` | Narrative or conversion purpose |
+| `text_safe_area` | Quiet region for real HTML at desktop and mobile |
+| `continuity` | Motif, light, material, camera, or transition shared with neighbors |
+| `semantics` | Meaningful with concise alt text, or decorative with empty alt text |
+| `medium` | `vector`, `generated-raster`, or `compare` |
+| `reason` | Why that medium fits the product |
+| `key_color` | `none`, `green`, `blue`, or `magenta` for an isolated generated subject |
+| `status` | `planned`, `pass`, `correctable`, `regenerate`, or `fallback` |
 
-Choose `compare` when the asset is branded and medium-sized, especially around `32–96px`, and neither medium is an obvious winner. Comparison is a visual QA step, not a requirement to duplicate every asset.
+Do not generate decorative filler without a UI, narrative, or conversion role.
 
-## Background-scene prompt pattern
+## Choose the medium deliberately
+
+Choose `vector` or existing CSS/icon-library assets when the element is a familiar functional symbol, appears around `12-32px`, needs `currentColor`, multiple states, exact alignment, keyboard clarity, or theme recoloring.
+
+Choose `generated-raster` when material, lighting, character, atmosphere, or worldbuilding carries real meaning and the asset is large enough for that information to survive rendering. Appropriate roles include environments, integrated heroes, section transitions, mascots, empty states, branded illustrations, textures, and product mockups.
+
+Choose `compare` for a branded element, usually around `32-96px`, when neither route is clearly superior. Place candidates in a task-specific directory created with `mktemp -d`, render them in the real component at target sizes and backgrounds, and compare product specificity, clarity, edges, theming, state needs, semantics, and loading cost. Copy only the accepted candidate into the repo.
+
+## Prompt compiler
+
+For reference-led generation, assemble the prompt in this order:
+
+1. `reference hierarchy`: identify primary, secondary, supporting, and negative references; visual language only;
+2. `section job`: exact section, narrative purpose, CSS size, and conversion contribution;
+3. `Visual Genome`: only the selected physical world, graphic language, local display treatment, and image transformation relevant to this asset;
+4. `physical subject`: construction, support, gravity, scale cues, hardware, seams, routing, ventilation, wear, and use;
+5. `surface and practical light`: material response, black/highlight behavior, motivated fixtures, and restrained accents;
+6. `camera and composition`: aspect ratio, lens feel, height, focal region, text-safe region, and desktop/mobile crop tolerance;
+7. `relationship to adjacent sections`: what continues and what changes;
+8. `forbidden transfer`: people, identity, logos, text, measurements, UI, symbols, layouts, and unrelated objects;
+9. `anti-AI rejection`: the subject-specific geometry, light, repetition, fake-text, and material failures that require rejection.
+
+Do not use a generic style label such as `cyberpunk`, `Apple-like`, or `cinematic lighting` in place of physical, graphic, camera, and UI decisions.
+
+## Role-specific prompting
+
+### Background scene or integrated hero
 
 ```text
 A [hero/section/footer] environmental scene for [specific website and section job].
-Narrative purpose: [what the visitor should understand or feel here] and how it advances toward [conversion].
-Continue the shared visual bible: [materials, palette, lighting direction, camera language, signature motif].
+Narrative purpose: [what the visitor understands or feels] and how it advances toward [conversion].
+Visual Genome: [only the selected axes relevant to this scene].
+Physical world: [buildable environment, subject, support, material, use evidence, and practical light].
 Composition: target [aspect ratio and viewport], focal subject in [region], quiet text-safe region in [region] for real HTML [heading/copy/CTA].
-Responsive crop tolerance: preserve [essential subject or horizon] across desktop and narrow mobile crops; keep critical detail away from fragile edges.
-Relationship to adjacent sections: [visual transition entering and leaving this scene].
+Responsive crop: preserve [essential subject or horizon] across desktop and narrow mobile; keep critical detail away from fragile edges.
+Continuity: [visual transition entering and leaving this scene].
 No text, letters, logos, watermark, mock UI, fake controls, fake data, or decorative elements that imply nonexistent functionality.
-The environment and background are intentional; do not use chroma key or transparency.
+The environment is intentional; do not use chroma key or transparency.
 ```
 
-Generate backgrounds as compositional partners for real HTML, not as complete poster designs. The page owns typography, controls, localization, accessibility, and final contrast treatment.
+### Isolated object
 
-## Isolated-object prompt pattern
+Choose exactly one key color absent from the complete subject palette: pure green `#00FF00`, pure blue `#0000FF`, or pure magenta `#FF00FF`. Record it before generation.
 
 ```text
 A single [asset subject] for [specific product and UI role].
-Visual language: [product-specific materials, shapes, palette, lighting, perspective].
-It will be displayed at approximately [target CSS size] on [light/dark/mixed] UI surfaces.
-Isolated and centered with generous clear padding; preserve the complete silhouette; no crop.
-One subject only. No background, frame, card, mock interface, watermark, logo, text, or extra objects.
-No cast shadow outside the subject unless explicitly required by the component.
-One perfectly uniform chroma-key background outside the subject palette—pure green or pure blue—with the exact key color recorded before generation. No white, gray, checkerboard, gradient, floor, cast shadow, or environmental background. Preserve clean antialiased subject edges and generous clear padding.
+Visual language: [product-specific material, shape, restrained palette, practical light, and perspective].
+Target: approximately [CSS size] on [light/dark/mixed] UI surfaces.
+Isolated and centered with generous clear padding; complete silhouette; no crop.
+One subject only. No frame, card, mock interface, watermark, logo, text, floor, environment, or extra objects.
+No cast shadow outside the subject unless the component explicitly requires one.
+One perfectly uniform [green #00FF00 / blue #0000FF / magenta #FF00FF] background absent from the subject. No checkerboard, gradient, lighting falloff, studio sweep, or shadow on the key.
+Preserve antialiased edges, fine hardware, internal gaps, and generous padding.
 ```
 
-Do not ask the model to reproduce essential UI labels. HTML text remains sharper, localizable, selectable, accessible, and easier to update.
+Direct transparent generation is a secondary route only after the current tool has demonstrated reliable real-alpha output. A visible checkerboard is ordinary baked pixels unless metadata proves alpha.
 
-Chroma-key generation is the default for isolated assets. Choose a key color absent from the subject and record it before generation. Prefer pure green when the subject has no green or yellow-green detail; prefer pure blue when it has no blue or cyan detail. If both conflict, choose another single saturated hue with strong color distance. Keep the background perfectly uniform with no lighting falloff or shadow. Use direct transparent generation only after the active generator has demonstrated reliable real-alpha output.
+### Texture
 
-## Section-sequence continuity
+Specify whether the texture tiles, its maximum usable contrast, intended surfaces, scale, transformation, and the content it must not compete with. A texture must derive from real product geometry, material, data, or brand structure rather than generic noise.
 
-Before generating multiple images, list the page sequence in order and assign each section one job. Check that:
+## Native image generation
 
-- The opening establishes the visual world and promise.
-- Middle sections provide proof, process, differentiation, or trust rather than repeating another hero shot.
-- Lighting, materials, horizon, camera distance, or the signature motif create a deliberate transition between neighboring sections.
-- Visual intensity leaves enough quiet space around dense copy and becomes stronger only where hierarchy benefits.
-- The final scene supports the CTA and feels like the conclusion of the same journey.
+For a new asset, call `image_gen__imagegen` with the complete prompt and omit reference-image parameters. For an edit, inspect the local source with `view_image`, then pass only the required local paths through `referenced_image_paths`. Never provide both local paths and conversation-image references.
 
-Do not generate every section independently with unrelated prompts. Reuse the visual bible and explicitly state what changes from the previous image.
+Do not claim that an asset was saved locally unless the tool actually provides or saves a usable file. If no local output is available, report the integration blocker instead of inventing a filename or using an unrelated placeholder.
 
-## Automatic local matting
+## Deterministic color-key removal
 
-When a generated PNG is opaque or contains a baked checkerboard or simple background, run the bundled macOS Vision matting script automatically:
+Use deterministic color-key removal only when the source uses one exact, uniform supported key that is absent from the subject. It removes external and enclosed key regions and performs color unmix/despill at antialiased edges.
+
+```bash
+scripts/remove-color-key.swift --key green input.png output-transparent.png
+scripts/remove-color-key.swift --key blue input.png output-transparent.png
+scripts/remove-color-key.swift --key magenta input.png output-transparent.png
+scripts/inspect-image-asset.sh --require-alpha output-transparent.png
+```
+
+The legacy magenta route remains available for compatibility:
+
+```bash
+scripts/remove-magenta-key.swift input.png output-transparent.png
+```
+
+Do not use a key script for a gradient, shadowed key, mixed background, subject containing important key-colored detail, or unsupported color. Preserve the input and always choose a new output path.
+
+## Semantic local matting
+
+When the background is simple but is not an exact supported key, use the bundled macOS Vision route:
 
 ```bash
 scripts/remove-image-background.swift input.png output-transparent.png
 scripts/inspect-image-asset.sh --require-alpha output-transparent.png
 ```
 
-Keep `input.png` unchanged and always write a new output file. Local matting requires no additional confirmation once this skill is active. Do not install image-processing dependencies or use a third-party removal service. Inspect the transparent output on checkerboard, light, and dark surfaces at both master and target sizes before integration.
-
-The script accepts an optional final `trim-radius` from `0` through `24` pixels when a baked white or dark fringe remains. Keep the default `3` first, then increase only when visual inspection proves the source contains a wider matte:
+The optional final `trim-radius` accepts `0` through `24`; begin with the default `3` and increase only when visual inspection proves a wider baked matte:
 
 ```bash
 scripts/remove-image-background.swift input.png output-transparent.png 8
 ```
 
-## One-pass native background-removal edit
+Semantic foreground masks may clean the outside while leaving key color inside brackets, cables, arrays, or other enclosed gaps. Do not treat a clean outer contour as proof of completion. Increasing erosion can also delete thin hardware; choose deterministic removal when the exact key is known.
 
-Use a native image edit only when local foreground matting cannot separate the subject from a materially ambiguous background.
+## One-pass native removal edit
 
-Use the generated asset as the sole local reference and request:
+Use at most one native image edit when local deterministic or semantic methods cannot separate a materially ambiguous background:
 
 ```text
 Keep the subject, silhouette, materials, colors, lighting, perspective, scale, padding, and composition unchanged.
-Remove only the background and any white or dark edge matte. Do not redraw, restyle, add objects, add text, crop, or change the subject.
+Remove only the background and edge contamination. Do not redraw, restyle, add objects, add text, crop, or change the subject.
 Return a transparent-background PNG with clean antialiased edges.
 ```
 
-Only one such edit is allowed by default. Repeated edits tend to drift identity and consume time without proving that the asset is improving.
+Reject a baked checkerboard immediately when metadata reports no alpha. Repeated edits tend to drift identity; if one edit fails, choose a vector/static fallback or mark the asset `Provisional` with the failed criterion.
 
 ## Alpha and edge QA
 
@@ -131,64 +180,35 @@ Run:
 scripts/inspect-image-asset.sh --require-alpha path/to/asset.png
 ```
 
-Then place the asset in a temporary preview with three tiles:
+Preview the output on checkerboard, near-white, and near-black surfaces at master and intended CSS sizes. Reject clipped silhouettes, shadows outside the subject, key-colored internal gaps, fringe, transparent subject holes, lost hardware, hard stair-stepping, or detail that collapses at target size.
 
-1. Checkerboard to expose opaque pixels.
-2. Near-white background to expose dark halos.
-3. Near-black background to expose light halos.
+Generated raster geometry may differ from the placeholder SVG, numeral, or CSS shape it replaces. Recalculate mobile position, size, crop, and opacity; do not inherit placeholder geometry unchanged.
 
-Inspect the actual rendered target size as well as the master. Reject assets with clipped silhouettes, accidental shadows, fringe pixels, internal transparency holes, unreadable detail, or composition that collapses at the intended CSS size.
+## Integration
 
-## Candidate comparison
-
-- Create a task-specific temporary directory with `mktemp -d`; do not use a broad shared path or the repo root.
-- Keep generated and vector candidates under distinct filenames.
-- Render both in the real component with the same dimensions, padding, background, and surrounding content.
-- Compare product specificity, visual hierarchy, target-size clarity, edge quality, theme compatibility, interaction-state needs, and loading cost.
-- Let the agent choose and record one sentence of rationale. Escalate only if the candidates remain materially tied after in-context inspection.
-- Copy only the accepted candidate into the repo. Leave rejected candidates in temporary storage rather than deleting or filing them as product assets.
-
-## Integration checklist
-
-- Follow existing asset naming and directory conventions.
-- Preserve a transparent PNG master when alpha is required.
-- Set intrinsic width and height to prevent layout shift.
-- Configure responsive sizing and object positioning deliberately.
-- Lazy-load below-the-fold art; follow the repo's established priority strategy for LCP imagery.
-- Use empty alt text for decoration and concise functional alt text for meaningful imagery.
-- Verify desktop, mobile, light, and dark contexts.
-- Preserve accessible HTML controls and labels even when imagery surrounds them.
+- Follow existing asset naming, image-component, loading, and directory conventions.
+- Preserve a transparent PNG master when alpha is required; do not convert formats without a tested repo pipeline.
+- Provide intrinsic width/height and responsive `sizes`; follow the repo's LCP strategy for above-the-fold imagery and lazy-load non-critical art.
+- Add deliberate overlays, contrast protection, focal positioning, and responsive crops for backgrounds.
+- Keep essential labels, values, instructions, and localized copy in semantic HTML.
+- Use `alt=""` for decorative imagery and concise functional alt text for meaningful imagery.
+- Check light/dark contexts, high-density displays, mobile crop, reduced motion, loading/error states, layout stability, and horizontal overflow.
+- Never use generated imagery as fake data, a fake chart, an unimplemented feature, or an accessible control.
 
 ## Implemented-page screenshot loop
 
-The required review target is the rendered website, not the generated source image:
-
-1. Serve the actual project locally through its normal development or preview command.
-2. Wait for fonts and generated images to load, then capture a representative desktop viewport.
-3. Capture a narrow mobile viewport and, when narrative progression matters, a full-page or ordered set of section screenshots.
-4. Inspect content and imagery together for text-safe areas, contrast, visual focus, repeated motifs, background continuity, CTA visibility, crop, first-load animation, and horizontal overflow.
-5. Make one focused correction to the prompt, asset selection, overlay, layout, crop, scale, or responsive positioning.
-6. Recapture the affected viewport and keep only the final QA screenshots as reported artifacts unless comparison evidence is useful. Display the final desktop and mobile captures in the response when supported; otherwise return their clickable local paths.
-
-Never retouch the screenshot to conceal an implementation defect. Correct the website or source asset, then capture it again.
-
-## Proven hero replacement QA
-
-When a generated raster replaces a CSS glyph, outlined numeral, SVG, or other placeholder, do not assume the old geometry remains valid:
-
-1. Load the page from a local HTTP server and wait for the actual image to complete.
-2. Confirm `naturalWidth`, `naturalHeight`, and the rendered bounding box rather than judging only the CSS container.
-3. Inspect one desktop viewport and one narrow mobile viewport after reload. Tall transparent assets commonly extend beyond a square wrapper and need a different mobile offset.
-4. Check heading, introductory copy, CTA, status-row, ticker, and following-section bounds for collision.
-5. Check `document.documentElement.scrollWidth` against the viewport width and inspect browser console errors.
-6. Make one focused positioning correction, then repeat the same viewport checks.
-
-For detailed subjects, compare the matted output on light and dark backgrounds before integration. Preserve internal neon strips, hardware gaps, dark recesses, and material edges; a valid alpha channel and clean outer contour do not prove those details survived.
+1. Serve the real project through its normal local command.
+2. Wait for fonts and images to load; capture representative desktop and narrow-mobile viewports.
+3. Add full-page, ordered-section, first-load, scrolled, Safari, or CJK captures when the narrative or changed implementation needs them.
+4. Inspect content and imagery together for text-safe space, contrast, focus, continuity, CTA, crop, intrinsic geometry, motion, and overflow.
+5. Make one focused prompt, asset, overlay, layout, crop, scale, or responsive correction for each material issue.
+6. Recapture the affected viewport and report final evidence. Do not retouch screenshots to hide defects.
 
 ## Failure states
 
-- **Native image tool unavailable:** report the blocker; do not silently route to RunComfy.
-- **No local file returned:** report that the asset cannot yet be integrated; do not invent a path.
-- **Local matting and one native edit both fail:** choose the vector candidate or mark the asset `Provisional` with the exact failed check.
-- **Generated detail fails at target size:** prefer the vector candidate even if the master image looks more attractive when enlarged.
-- **Generated art implies nonexistent capability or data:** reject it; visual polish cannot invent product truth.
+- Native image tool unavailable: report the blocker; do not route to another model service.
+- No local file returned: report that the asset cannot be integrated.
+- Key or semantic matting fails: use a vector/static candidate or mark `Provisional` with the exact failed check.
+- Generated detail fails at target size: prefer the clearer vector or static candidate.
+- Generated art copies identity or implies nonexistent capability/data: reject it.
+- Required third-party dependency is absent: present the verified capability and fallback, then wait for installation approval.

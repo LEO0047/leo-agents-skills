@@ -1,6 +1,6 @@
 ---
 name: openai-frontend-design
-description: Direct and implement narrative-led frontend experiences with OpenAI-generated imagery, including backgrounds, environmental scenes, heroes, section transitions, textures, and isolated UI assets. Use this skill whenever the user explicitly invokes openai-frontend-design, asks for GPT/OpenAI-generated website imagery, wants image-first art direction tied to the full page story, or requests custom visual assets. Plan imagery as one site-wide visual system, integrate it into the real interface, and deliver desktop and mobile screenshots for contextual review. Keep small functional controls vector-based while using native OpenAI image generation where imagery materially improves the product.
+description: Direct and implement narrative-led frontend experiences with OpenAI-generated imagery. Use for GPT/OpenAI-generated website visuals, image-first art direction, or custom frontend assets. Construct a project-specific Visual Genome, integrate accepted imagery into the real interface, and verify desktop and mobile screenshots without turning one prior aesthetic or one technical effect into a global template.
 compat: [codex]
 compatibility: Requires the native image_gen__imagegen tool for generation or editing, view_image for local visual inspection, and macOS sips for deterministic image metadata checks.
 metadata:
@@ -9,267 +9,136 @@ metadata:
 
 # OpenAI Frontend Design
 
-Use OpenAI image generation as a frontend art-direction and visual-storytelling instrument, not as a replacement for sound interaction design. Generated imagery should establish the site's world, reinforce the progression of its content, and make the product more specific, expressive, and memorable while functional controls remain clear, responsive, themeable, and accessible.
+Use OpenAI image generation as a frontend art-direction and visual-storytelling instrument, not as a substitute for product truth, interaction design, accessible HTML, or a project-specific visual thesis. Generated imagery must support the site's audience journey, section sequence, and conversion goal. Judge it inside the implemented website, not only in an image viewer.
 
-Do not treat this skill as an isolated-asset factory. Begin with the website's narrative, audience, conversion goal, page sequence, content hierarchy, and emotional arc. Design backgrounds, environmental scenes, hero subjects, section imagery, textures, and isolated objects as one coordinated system. The final judgment happens in screenshots of the implemented website, not in the image-generation result alone.
+No palette, material system, layout skeleton, display treatment, motion grammar, or prior aesthetic profile is globally mandatory. The brief, closest repo instructions, existing design system, approved references, and real content remain authoritative.
 
-## Required foundation
+## Required foundation and routing
 
 Before planning or editing a frontend, read and follow both sibling files completely:
 
-- [`../frontend-design/SKILL.md`](../frontend-design/SKILL.md) for the core design process.
+- [`../frontend-design/SKILL.md`](../frontend-design/SKILL.md) for core design direction.
 - [`../frontend-design/QUALITY_GATE.md`](../frontend-design/QUALITY_GATE.md) for implementation and visual verification.
 
-Then read [`references/openai-image-assets.md`](references/openai-image-assets.md) whenever the task may generate, compare, edit, or integrate image assets.
+Then route to these references:
 
-Repo-local instructions, the existing design system, and the user's current brief remain authoritative. “OpenAI” identifies the image-generation path; it does not impose OpenAI's brand style.
+- Read [`references/visual-genome.md`](references/visual-genome.md) for every new or materially revised visual direction.
+- Read [`references/openai-image-assets.md`](references/openai-image-assets.md) before generating, comparing, editing, matting, or integrating image assets.
+- Read [`references/technology-capability-map.md`](references/technology-capability-map.md) before proposing advanced motion, WebGL, shaders, smooth scrolling, or a third-party visual package.
+- Read [`references/evaluation-gates.md`](references/evaluation-gates.md) before accepting visual assets or reporting a frontend as visually verified.
 
 ## Authorization boundary
 
-An explicit invocation of `$openai-frontend-design`, or an explicit request for OpenAI/GPT-generated frontend assets, authorizes native `image_gen__imagegen` calls, creation of new local image assets, and automatic non-destructive local background matting when transparency is required within that frontend task's stated scope. Do not ask for separate confirmation before matting. Preserve the generated original, write the transparent result to a new file, and use the bundled script or already-installed system tooling without adding dependencies.
+An explicit invocation of `$openai-frontend-design`, or an explicit request for OpenAI/GPT-generated frontend assets, authorizes native `image_gen__imagegen` calls, creation of new local image assets, and non-destructive local background matting within the stated frontend scope. Preserve generated originals and write edited or transparent results to new paths.
 
-It does not authorize RunComfy or another external model router, dependency installation, overwriting or deleting existing assets, unrelated generated imagery, remote uploads, commit, push, PR, publish, or deploy. Follow higher-priority instructions if they narrow this boundary.
+It does not authorize RunComfy or another external model router, dependency installation, overwriting or deleting existing assets, unrelated imagery, remote uploads, commit, push, PR, publish, or deploy. A technology recommendation is not installation permission.
 
-## Model identity and capability claims
+## Model identity and provenance
 
-Treat the ChatGPT product label, API model ID, and Codex tool route as separate facts. `ChatGPT Images 2.0` is a product experience and `gpt-image-2` is an API model ID; native `image_gen__imagegen` calls do not currently expose a model selector or return a trustworthy model ID in this skill's tool contract.
+Treat a ChatGPT product label, an API model ID, and the Codex tool route as separate facts. The native `image_gen__imagegen` tool does not expose a trustworthy model selector or model ID in this skill's contract.
 
-- Use native `image_gen__imagegen` when this skill is invoked, but never claim that a result was generated by `gpt-image-2` unless the tool or an explicitly authorized API response proves that exact model ID.
-- If the user requires hard model pinning, report that native routing is unverified. Do not silently use another router or imply equivalence.
-- Describe native results as `OpenAI native image generation / model ID unverified` when delivery evidence requires provenance.
-- Model choice does not replace art direction. Diagnose synthetic-looking output through composition, material logic, lighting, camera behavior, surface variation, and contextual plausibility before assuming a different model will solve it.
+- Never claim `gpt-image-2` or another exact model unless the tool or an explicitly authorized API response proves it.
+- If hard model pinning is required, report native routing as unverified.
+- When provenance matters, describe the result as `OpenAI native image generation / model ID unverified`.
 
-## Photorealism and anti-AI-look gate
+## Required Visual Genome contract
 
-When the brief asks for realism, cinematic realism, believable cyberpunk, industrial photography, or explicitly rejects an AI-generated look, establish a physical-world thesis before prompting. Define what was built, how it is supported or assembled, where practical light comes from, what the camera is photographing, and which ordinary imperfections prove scale and use.
+Before implementation or image generation, record a compact direction with these fields:
 
-For photorealistic cyberpunk, prefer **a real place with credible near-future interventions** over generic concept art:
-
-- Anchor the scene in buildable materials, fasteners, seams, cable routing, ventilation, tool marks, dust, fingerprints, worn edges, moisture, and believable gravity.
-- Use motivated practical light from fixtures, signage, task lamps, displays, or embedded light guides. Neon is an environmental light source, not an outline applied uniformly to every object.
-- Specify photographic behavior such as lens range, camera height, focus falloff, exposure, mixed color temperature, sensor grain, flare restraint, and asymmetric light. Avoid the vague phrase `cinematic lighting` by itself.
-- Keep the site's actual subject dominant. Cyberpunk atmosphere should reveal the workshop, product, service, or story rather than turn it into a game prop or fictional interface.
-- Spend saturated cyan, acid yellow, and magenta locally. Preserve neutral blacks, wood, metal, skin, concrete, smoke, and shadow so accents retain force.
-- Prefer environmental storytelling—unfinished jigs, calibration marks, rain residue, repaired surfaces, stacked materials, test pieces—over floating particles, decorative circuitry, random tubes, and ornamental HUD graphics.
-
-Reject or regenerate a realism-critical asset when two or more of these synthetic tells remain visible at intended size:
-
-- uniform glow on unrelated edges or light with no plausible source;
-- excessively perfect, repeated, melted, or mechanically impossible hardware;
-- pristine materials with no scale cues, contact shadows, assembly logic, or wear variation;
-- arbitrary micro-detail, fake glyphs, illegible signage, ornamental cables, or interface fragments;
-- centered poster symmetry when the UI requires editorial composition and a real text-safe region;
-- depth of field, haze, reflections, or bloom that ignore the scene's geometry;
-- a subject that reads as a rendered collectible or game asset when the brief calls for documentary or commercial photography.
-
-Record the intended realism mode in the visual bible—such as `documentary`, `commercial product photography`, `architectural editorial`, or `photorealistic near-future cinema`—and verify the integrated screenshot against that mode. Do not accept an image only because it is detailed or aesthetically impressive in isolation.
-
-## Using a visual style reference
-
-When the user supplies an image to define the desired look, inspect it and translate it into transferable visual properties before generation. Do not copy its characters, identity, text, layout, or subject matter unless those elements are separately requested and appropriate for the product.
-
-Extract and record only the useful art-direction signals:
-
-- realism mode and rendering finish;
-- contrast curve, black level, highlight roll-off, and color temperature;
-- surface behavior such as wet reflections, condensation, wear, skin, metal, glass, wood, or fabric response;
-- camera distance, lens feel, framing, depth of field, and subject separation;
-- environmental density, practical-light placement, atmosphere, and restrained accent colors;
-- the specific boundary between realism and stylization—for example, physically credible materials with heightened game-cinematic lighting.
-
-Use the local reference through `referenced_image_paths` when the native tool supports it, and state clearly in the prompt that it is a **visual-language reference only**. Explicitly forbid transferring people, faces, bodies, logos, labels, text, measurements, costumes, or unrelated objects from the reference. The generated asset must remain truthful to the website's real narrative job.
-
-High-end photoreal CG is a valid realism mode and should not be flattened into documentary photography when the user's references clearly prefer heightened finish. Define it as physically credible materials, assembly, scale, and light sources combined with game-cinematic contrast, wet or polished highlight control, deep blacks, selective saturated practical light, and premium editorial composition. Preserve the physical credibility; heighten only the presentation.
-
-When the user explicitly approves the existing layout and asks generated imagery to replace SVG, CSS geometry, or placeholder illustration, treat that as a **medium replacement**, not permission to redesign the page. Preserve section order, information hierarchy, card geometry, copy, and responsive rhythm. Replace only the approved visual surfaces, then recalculate crop and contrast inside those existing bounds. Do not add a new image-led section merely to showcase an attractive generated asset.
-
-## Reference hierarchy and learned aesthetic profile
-
-Do not average multiple references into one vague style. Weight them by the user's explicit feedback and record the hierarchy before prompting:
-
-1. `primary-anchor`: images described as `最滿意`, `最喜歡`, `就是這張`, or an equivalent strongest preference;
-2. `secondary-anchor`: images described as `也滿意`, `偏好`, `這也是我喜歡的`, or a supporting direction;
-3. `supporting-reference`: images supplied for one transferable property such as lighting, environment, layout, material, or camera language;
-4. `negative-reference`: an earlier output or example the user says feels too AI-generated, too clean, insufficiently cyberpunk, or otherwise wrong.
-
-The primary anchor controls finish, material density, contrast, and compositional character. Secondary anchors may contribute environment, scale, lighting, or product context without diluting the primary anchor. Supporting references contribute only their named property. Negative references become explicit forbidden elements. If the user changes the ranking, the newest explicit ranking wins.
-
-For the currently learned **material-nocturne** profile, use these defaults only when they fit the current brief and the user has not supplied a conflicting direction:
-
-| Layer | Preferred treatment |
+| Field | Contract |
 |---|---|
-| `primary material system` | Near-black graphite surfaces, dark walnut, layered birch, blackened steel, anodized metal, smoked or violet resin, restrained brass geometry, precise specimen-like arrangement, tactile pores, scratches, fingerprints, and edge wear |
-| `secondary environment` | Humid Taiwan night, rain residue, wet concrete or glass reflections, deep blue-black space, cyan and violet practical light, isolated magenta or acid-yellow accents, believable interiors and alley spill light |
-| `rendering finish` | High-end photoreal CG with physically credible construction and premium game-cinematic or commercial-editorial polish rather than flat documentary neutrality |
-| `composition` | Editorial asymmetry, dense evidence around deliberate quiet regions, strong crop tolerance, real HTML text-safe areas, and a clear material or product focal subject |
-| `graphic layer` | Archival or research-publication discipline expressed through HTML typography, rules, labels, and spacing rather than baked fake text inside generated pixels |
-| `restraint ratio` | Roughly 65% physical material credibility, 25% cinematic cyberpunk atmosphere, and 10% graphic-system accent |
+| `aesthetic_profile` | `brief-native`, `leo-visual-dna`, a named assembled genome, or a custom reference-led direction |
+| `profile_reason` | Why the selected profile fits the subject, audience, and page job |
+| `physical_world` | Exactly one buildable or photographable world |
+| `graphic_language` | Exactly one primary language and at most one contrasting secondary language |
+| `display_medium` | Zero or one display treatment; `none` is valid |
+| `motion_grammar` | One narrative motion logic, or `none` when motion adds no value |
+| `image_transformation` | One primary transformation and at most one supporting transformation |
+| `signature_interaction` | Zero or one memorable interaction tied to the subject |
+| `forbidden_elements` | Specific bundle reuse, clichés, transfers, or effects that would break product truth |
+| `text_safe_areas` | Desktop and mobile regions reserved for real HTML content |
+| `reduced_motion_fallback` | How meaning and hierarchy survive without motion |
 
-Avoid turning this profile into a universal cyberpunk preset. Reject uniform neon edging, random circuitry, ornamental HUDs, fake glyphs, copied characters, sterile showroom perfection, collectible-render staging, excessive bloom, and unrelated botanical or symbolic subjects transferred from a style reference. Keep the real website subject and conversion job in control.
+Do not begin generation until these choices are internally compatible and the site's actual subject remains dominant.
 
-## Prompt assembly contract
+## Leo Visual DNA routing
 
-For reference-led generation, structure the prompt in this order so visual preference does not overpower the UI job:
+When the brief does not establish a stronger direction, use `leo-visual-dna` as a decision framework, not a fixed theme. It contains four transferable genes:
 
-1. `reference hierarchy`: identify which local image is primary, secondary, supporting, or negative and state that references provide visual language only;
-2. `section job`: name the exact website section, narrative purpose, intended CSS size, and conversion contribution;
-3. `physical subject`: describe what exists, how it is built, what supports it, and which real details establish scale;
-4. `surface and light`: name material response, wear, practical light sources, black level, highlight behavior, and restrained accent colors;
-5. `camera and composition`: specify aspect ratio, lens feel, camera height, focal region, text-safe region, and desktop/mobile crop tolerance;
-6. `forbidden transfer`: prohibit people, faces, bodies, costumes, plants, symbols, logos, text, measurements, social-media UI, and unrelated objects from the references;
-7. `anti-AI rejection`: list the synthetic tells most likely for this asset and require physically credible geometry and motivated light.
+- `content_order`: clarity, deliberate whitespace, stable hierarchy, and product-first composition;
+- `product_drama`: contextual reveal, image scale, and restrained visual tension;
+- `mission_scale`: milestones, sequence, operational language, and a sense of consequential progress;
+- `engineering_signature`: credible materials, manufacturing evidence, measurement, calibration, or signal behavior used with restraint.
 
-Do not ask for a generic `cyberpunk style` when the reference hierarchy can describe a more specific material, environment, and editorial finish.
+Select one mode by subject:
 
-## Copy rhythm and fixed-line QA
+- `Product Reveal` — planning weight `60 / 30 / 10`: content order / product drama / engineering signature.
+- `Mission Launch` — planning weight `30 / 55 / 15`: content order / product drama plus mission scale / engineering signature.
+- `Signal Workshop` — planning weight `35 / 20 / 45`: content order / product drama / engineering signature.
 
-Treat user-approved copy rhythm as part of the art direction. If the user requests removal of specific punctuation such as `，。`, or asks spaces to become deliberate line breaks, record that constraint in the visual bible and do not reintroduce the characters during later copy edits. This is project-scoped behavior, not a universal rule for every website.
+These numbers express design emphasis only. Never convert them into literal color percentages, component counts, fixed palettes, or mandatory layout proportions. A conflicting brief, reference, accessibility need, or design system overrides this routing.
 
-- Use semantic HTML and deliberate wrappers for approved lines. Prefer block spans for exact line groups; use `<br />` when the break is genuinely part of the phrase.
-- When a phrase must remain on one line, combine the wrapper with an appropriate `white-space` rule and responsive type sizing. Do not let one final CJK character become an orphaned extra line.
-- For a heading approved as exactly two lines, verify the two line groups separately rather than assuming one `<br />` prevents internal wrapping.
-- At desktop and narrow mobile widths, inspect `Range.getClientRects()` or equivalent rendered line boxes for each fixed line. Confirm the intended line count, no horizontal overflow, and no collision with adjacent imagery.
-- Repeat the check after a cold-style reload because font loading, reveal animation, and intrinsic image dimensions can change first-load geometry.
+Brand research may inform transferable principles, but do not copy another company's layout, identity, wording, product language, or complete visual trade dress. Keep brand names out of active prompt style commands unless the user explicitly requests a lawful reference comparison; describe the relevant visual properties instead.
+
+## Reference hierarchy and anti-copy check
+
+Rank supplied references before prompting:
+
+1. `primary-anchor`: the user's strongest approved preference;
+2. `secondary-anchor`: a supporting direction;
+3. `supporting-reference`: one named transferable property;
+4. `negative-reference`: a result or example whose failures must be forbidden.
+
+References provide visual language only unless the user separately authorizes their real subject matter. Forbid accidental transfer of people, faces, bodies, costumes, logos, labels, measurements, text, UI, symbols, or unrelated objects.
+
+When safe evidence for the last three completed visual directions is available in the workspace, current conversation, or explicitly provided memory, compare:
+
+- dominant palette;
+- display-type character;
+- layout skeleton;
+- hero composition;
+- motion grammar;
+- image treatment;
+- signature interaction.
+
+If three or more repeat together, revise at least one Visual Genome axis before implementation. If history is unavailable, record `Uncertainty: recent visual-direction evidence unavailable`; do not invent history or write durable memory automatically.
 
 ## Workflow
 
-1. Inspect the product context, current asset conventions, design tokens, components, responsive behavior, and the real content to be presented.
-2. Define the design thesis, audience journey, conversion goal, emotional arc, and one signature visual element using the base skill.
-3. Rank supplied references as primary, secondary, supporting, or negative; record any approved copy, punctuation, and fixed-line constraints.
-4. Write a compact narrative image plan that maps each page or major section to its story job, visual motif, atmosphere, composition, text-safe area, and relationship to the preceding and following sections.
-5. Write the asset manifest. Assign each item a narrative role such as `background-scene`, `integrated-hero`, `isolated-object`, or `texture`, then classify its medium as `vector`, `generated-raster`, or `compare`.
-6. Establish a shared visual bible before generation: reference hierarchy, realism mode, palette, materials, lighting direction, camera language, depth, texture, recurring motifs, copy rhythm, and forbidden elements. Reuse it across prompts so the site feels like one world.
-7. Generate only the planned imagery that materially supports the narrative. Use the native OpenAI image tool; do not route to RunComfy unless the user separately requests it.
-8. Inspect every result against the primary reference and in relation to its neighboring content. Verify transparency only for isolated assets; preserve intentional environments for background scenes and integrated heroes.
-9. Integrate accepted imagery into the real website using actual copy, layout, controls, gradients, overlays, and responsive behavior. Do not evaluate it in an empty image viewer alone.
-10. Run the website and capture at least one representative desktop screenshot and one narrow mobile screenshot. For long narrative pages, also capture the full page or the key section sequence when tooling permits.
-11. Critique the screenshots for narrative continuity, text contrast, focal hierarchy, crop, repeated motifs, section transitions, conversion clarity, fixed-line count, first-load overlap, and mobile composition. Complete at least one focused correction pass when a material issue is visible.
-12. Deliver the screenshots or their saved local paths with the implementation evidence. A generated image is not considered successfully integrated until the real-page screenshot has been inspected.
+1. Inspect the product, audience, page job, real content, existing tokens, components, asset conventions, interactions, and responsive behavior.
+2. Define the design thesis, conversion goal, emotional arc, and one justified signature element using the base frontend skill.
+3. Write the Visual Genome contract and perform the anti-copy check.
+4. Rank references and record approved copy, punctuation, fixed-line, and no-orphan constraints.
+5. Map each major section to its story job, visual intensity, text-safe region, transition, and relationship to the conversion path.
+6. Write an asset manifest and choose `vector`, `generated-raster`, or `compare` for every planned visual role.
+7. Establish a shared visual bible: realism mode, palette, materials, practical-light behavior, camera language, depth, texture, recurring motif, copy rhythm, and forbidden elements.
+8. Generate only assets that materially support the plan. Keep small functional controls vector-based.
+9. Inspect each result at intended size against the reference hierarchy, physical-world thesis, neighboring content, and evaluation gates.
+10. Integrate accepted assets with real HTML copy, controls, overlays, responsive crops, intrinsic dimensions, loading behavior, and accessible semantics.
+11. Capture the implemented page at representative desktop and narrow-mobile sizes after fonts and images load. Add full-page, key-section, first-load, scrolled, Safari, or CJK captures when the changed surface requires them.
+12. Complete at least one focused correction pass for any material issue, rerun relevant checks, and report only the evidence actually inspected.
 
-## Narrative image plan
+## Non-negotiable gates
 
-Before generating, answer these questions compactly:
-
-| Field | Meaning |
-|---|---|
-| `audience` | Who should recognize themselves or their desired outcome in the visual world |
-| `site_promise` | The single idea the complete visual journey must make believable |
-| `conversion` | The action the imagery and content hierarchy should lead toward |
-| `emotional_arc` | How the page should progress, for example intrigue → proof → trust → action |
-| `visual_world` | Shared materials, palette, lighting, environment, camera, and texture |
-| `reference_hierarchy` | Which references are primary, secondary, supporting, or negative and what each one controls |
-| `realism_mode` | Documentary, commercial photography, architectural editorial, high-end photoreal CG, or another explicit finish |
-| `signature_motif` | One recognizable form or device repeated with restraint across sections |
-| `section_jobs` | What each page or major section must communicate and how imagery supports it |
-| `continuity` | How backgrounds, objects, light, framing, or motion connect adjacent sections |
-| `text_safe_areas` | Where headings, copy, navigation, and CTA must remain readable at desktop and mobile sizes |
-| `copy_constraints` | Approved punctuation, wording, fixed line groups, and no-orphan requirements that must survive responsive rendering |
-| `screenshot_targets` | Required desktop, mobile, full-page, or key-section captures for final review |
-
-The plan should be short enough to guide implementation. Do not turn it into fictional brand lore that is unsupported by the product.
-
-## Asset manifest
-
-Record one row per visual asset:
-
-| Field | Meaning |
-|---|---|
-| `id` | Short stable purpose-led identifier |
-| `role` | Background scene, integrated hero, isolated object, section transition, empty state, mascot, card art, category icon, texture, control icon, or other real UI role |
-| `display_size` | Intended CSS width and height or responsive range |
-| `interactive` | Whether it represents or changes state |
-| `recolorable` | Whether CSS/theme color changes are required |
-| `backgrounds` | Light, dark, mixed, image, or transparent surfaces it must survive |
-| `section_job` | The narrative or conversion purpose this image supports |
-| `text_safe_area` | Region that must remain quiet enough for real HTML content |
-| `continuity` | Motif, light, material, or composition shared with neighboring sections |
-| `semantics` | Meaningful with concise alt text, or decorative with empty alt text |
-| `medium` | `vector`, `generated-raster`, or `compare` |
-| `reason` | One sentence explaining why the medium fits the product |
-
-Do not turn the manifest into a long design document. Its purpose is to prevent decorative image generation without a real UI role.
-
-## Choose the medium deliberately
-
-Prefer existing vector icons, an established icon library, or simple CSS for small functional glyphs such as search, close, back, warning, disclosure, checkbox, radio, menu, and loading controls. These elements need exact alignment, current-color theming, state changes, keyboard clarity, and crisp rendering at small sizes.
-
-Prefer OpenAI-generated raster imagery for narrative backgrounds, environmental scenes, integrated heroes, section transitions, mascots, empty states, feature or card illustrations, branded category imagery, atmospheric textures, product mockups, and other visuals whose material, lighting, character, or narrative contributes meaning.
-
-Use `compare` for ambiguous branded elements, normally in the `32–96px` range. Put a generated candidate and a vector/icon-library candidate in a task-specific temporary directory created with `mktemp -d`. Render both in the actual component at target sizes and on required backgrounds. Choose the one with better product fit, legibility, edge quality, hierarchy, theme compatibility, and loading cost. Copy only the selected candidate into the repo; never use the repo as a candidate dump.
-
-## Native image generation
-
-For a brand-new asset, call `image_gen__imagegen` with the complete prompt and omit reference-image parameters. For an edit, first inspect the local source with `view_image`, then pass only the required local paths through `referenced_image_paths`. Never provide both local reference paths and conversation-image references.
-
-Prompts should describe the product-specific narrative job, subject, environment, visual language, material, palette, lighting, camera or perspective, intended UI scale, composition, neighboring sections, and required text-safe areas.
-
-- For `background-scene` and `integrated-hero`, generate the intended environment and composition directly. Specify the target aspect ratio, focal region, quiet regions for HTML text, responsive crop tolerance, and how the image continues the site's visual story. Do not request chroma key or transparency for an intentional background.
-- For `isolated-object`, default to one flat chroma-key background selected outside the subject palette—normally pure green or pure blue—and record the exact key color in the asset manifest or task notes. Request generous clear padding, no crop, one subject, no frame, no watermark, no extra objects, and no baked UI.
-- For `texture`, specify whether it tiles, how much contrast it may carry, and which content surfaces it must not compete with.
-
-A true transparent PNG is the secondary option for isolated objects only when the active generator has already proven that it returns real alpha reliably. Keep essential labels, instructions, values, and localized copy in HTML rather than inside generated pixels.
-
-Do not claim that an asset was saved locally unless the tool actually provides or saves a local file. If no usable local output is available, report the integration blocker instead of substituting an invented filename or unrelated placeholder.
-
-## Transparency and background removal
-
-1. Generate isolated assets against one perfectly uniform green-screen or blue-screen key color that does not appear in the subject, and record the exact key color before generation.
-   - Prefer pure green when the subject has no green or yellow-green detail.
-   - Prefer pure blue when the subject has no blue or cyan detail.
-   - Never request white, gray, checkerboard, gradient, studio sweep, floor, cast shadow, or contextual scenery as the removable background.
-   - Use direct transparent generation only as a secondary path after the active generator has proven that it returns real alpha reliably.
-2. Inspect the result visually and run `scripts/inspect-image-asset.sh --require-alpha <asset.png>`.
-3. Preview it against checkerboard, light, and dark surfaces. An alpha channel alone does not prove clean edges.
-4. If the asset is opaque or contains a baked checkerboard or simple background, automatically run `scripts/remove-image-background.swift <input> <output.png>`. This is a non-destructive local operation: keep the input unchanged and use a new output path.
-5. Re-run metadata checks and inspect the local-matted result on checkerboard, light, and dark surfaces at master and target sizes. Reject masks with missing subject details, internal holes, clipped silhouettes, hard stair-stepping, or obvious fringe.
-6. If local matting cannot isolate the subject cleanly because the background and foreground are materially ambiguous, make at most one native OpenAI edit that preserves the subject and removes only the background and edge contamination.
-7. If transparency or edge quality still fails, do not install `rembg` or another dependency. Use the vector candidate when one exists; otherwise report the asset as `Provisional` and explain the failed criterion.
-
-Local matting is automatic once this skill is active and the task requires a transparent asset. It does not authorize modifying unrelated images, overwriting originals, installing packages, or sending the image to a third-party background-removal service.
-
-## Verified isolated-asset lessons
-
-Apply these rules from the successful high-detail hero workflow:
-
-- Treat a visible checkerboard as ordinary baked pixels unless metadata proves real alpha. Never accept it by appearance alone.
-- When the subject contains several saturated accent colors, compare the complete palette before choosing a key. Pure green and pure blue remain the first candidates, but use another single saturated hue when either candidate conflicts with important subject detail. Record the chosen color.
-- Preserve small internal details such as light tubes, gaps, hardware, wood laminations, and dark recesses during matting. A clean outer silhouette is insufficient if the mask deletes product-defining detail or creates transparent holes.
-- Validate the matted master on near-white and near-black backgrounds, then inspect it again at the intended CSS size. Edge defects and lost internal detail can appear at only one of those scales.
-- Generated raster geometry may differ materially from the placeholder glyph, SVG, or CSS shape it replaces. Recalculate mobile position, size, and opacity instead of inheriting the placeholder values unchanged.
-- Test the page after a cold-style reload at one desktop and one narrow mobile viewport. Confirm image completion, intrinsic dimensions, no horizontal overflow, no console errors, and no collision between the asset, headings, status bars, or reveal-animation content.
-- For an above-the-fold decorative hero, provide intrinsic `width` and `height`, `alt=""`, and the repo's established high-priority loading treatment. Keep surrounding labels and controls in accessible HTML.
-
-These lessons were verified on a tall mechanical hero asset with wood, metal, cyan, acid-yellow, and magenta detail. The final asset retained its internal lighting, passed light/dark edge inspection, and required a separate mobile placement correction after replacing a typographic placeholder.
-
-## Frontend integration
-
-- Preserve a transparent PNG master when transparency is required. Do not convert formats unless the repo already has a tested image pipeline.
-- Use the existing framework image component and asset directory. Supply intrinsic dimensions and responsive `sizes`; lazy-load non-critical imagery and follow the repo's LCP strategy for heroes.
-- Treat generated backgrounds as part of the content hierarchy: add deliberate overlays, contrast protection, focal positioning, and responsive crops rather than relying on one static `background-size: cover` result everywhere.
-- Maintain continuity across the page through repeated materials, light direction, camera language, or a restrained signature motif. Avoid a gallery of individually attractive but unrelated images.
-- Use `alt=""` for decorative imagery. Give meaningful assets concise alt text that communicates their function or content without describing irrelevant visual style.
-- Check light and dark surfaces, high-density displays, mobile crops, reduced-motion behavior, loading and error states, and layout stability.
-- Do not use generated imagery as fake data, a fake chart, an unimplemented feature, or a substitute for accessible controls.
-
-## Screenshot-directed critique
-
-Screenshots of the implemented website are required review artifacts. They must show the real HTML content and generated imagery together.
-
-- Capture a representative desktop viewport and a narrow mobile viewport after the images have loaded. Capture full-page or sequential section screenshots when the page's narrative depends on progression.
-- Inspect the first load as well as scrolled states. Reveal animation, delayed fonts, intrinsic image geometry, and responsive crops can create collisions absent from a static mockup.
-- Judge the complete composition: story continuity, text contrast, focus order, density, background-to-foreground separation, CTA visibility, crop, edge quality, and transition into the next section.
-- Use the screenshot findings to adjust the actual layout, overlay, crop, asset prompt, or asset selection. Do not hide a structural problem by editing only the screenshot.
-- Save screenshots to task-specific temporary or artifact paths and report them. When the interface supports local image display, include the final desktop and mobile screenshots directly in the response; otherwise provide clickable paths. Do not commit QA screenshots unless the repo explicitly keeps visual-regression fixtures.
+- Product truth, accessible controls, readable content, responsive behavior, and reduced-motion meaning outrank visual spectacle.
+- A display medium such as CRT, LCD, e-paper, projection, or oscilloscope is a local viewing or state language, not the site's total aesthetic direction.
+- Per page, default to at most one primary motion grammar, one background effect, and one signature microinteraction. Justify each exception through narrative value.
+- For realism-critical imagery, define construction, support, gravity, practical light, scale evidence, wear, camera behavior, and likely synthetic failure modes before prompting.
+- Reject fake text, fake data, fake controls, copied brand identity, impossible construction, unmotivated light, or imagery that implies nonexistent functionality.
+- Do not recommend WebGL, smooth scrolling, shaders, or a package merely to make a simple information page feel more advanced.
+- Keep approved localized copy and exact line groups in HTML. Verify fixed lines and CJK wrappers at desktop and mobile after a cold-style reload.
 
 ## Delivery evidence
 
 Report separately:
 
-- Which assets were generated, edited, selected, or rejected.
-- Which elements remained vector and why.
-- Alpha metadata and light/dark edge inspection results.
-- Desktop, mobile, and any required full-page or key-section screenshot review, including the saved paths.
-- How the generated backgrounds and subjects support the site narrative and conversion path.
-- Relevant lint, typecheck, test, or build results.
+- the selected Visual Genome and why it fits;
+- anti-copy evidence or the explicit `Uncertainty` state;
+- generated, edited, selected, rejected, and vector-retained assets;
+- provenance, alpha metadata, and light/dark target-size edge inspection where relevant;
+- desktop, mobile, and any required full-page, key-section, Safari, CJK, first-load, or scrolled screenshot review;
+- the focused correction pass and its result;
+- relevant lint, typecheck, test, or build results;
+- technology recommendations, live-verification status, fallbacks, and any unapproved dependency blocker.
 
-Use `已驗證`, `Observed`, `Provisional`, and `未執行` accurately. Never describe an uninspected generated asset as production-ready.
+Use `已驗證`, `Observed`, `Provisional`, `Uncertainty`, and `未執行` accurately. Never call an uninspected generated asset or implementation production-ready.
