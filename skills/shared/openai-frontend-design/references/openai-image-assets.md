@@ -120,25 +120,47 @@ Specify whether the texture tiles, its maximum usable contrast, intended surface
 
 ## Native image generation
 
-For a new asset, call `image_gen__imagegen` with the complete prompt and omit reference-image parameters. For an edit, inspect the local source with `view_image`, then pass only the required local paths through `referenced_image_paths`. Never provide both local paths and conversation-image references.
+Script paths below are relative to the skill directory; set `SKILL_DIR` once per session to wherever this skill is installed (`~/.claude/skills/openai-frontend-design` or `~/.codex/skills/openai-frontend-design`).
 
-Do not claim that an asset was saved locally unless the tool actually provides or saves a usable file. If no local output is available, report the integration blocker instead of inventing a filename or using an unrelated placeholder.
+**On Codex (native tool)** — for a new asset, call `image_gen__imagegen` with the complete prompt and omit reference-image parameters. For an edit, inspect the local source with `view_image`, then pass only the required local paths through `referenced_image_paths`. Never provide both local paths and conversation-image references.
+
+**On Claude Code (delegated route)** — generation runs through `scripts/codex-generate-image.sh`, which delegates one non-interactive turn to the bundled Codex CLI and its native `image_gen__imagegen` tool. Write the complete prompt yourself and pass it as a file so quoting and line structure survive intact.
+
+```bash
+"$SKILL_DIR/scripts/codex-generate-image.sh" --out assets/<role>.png --prompt-file <prompt.txt>
+```
+
+For an edit, name each local source with `--edit`; the wrapper grants the Codex sandbox read access to those directories and instructs it to inspect them before passing them as `referenced_image_paths`. Never mix local paths with conversation-image references, and state the invariants explicitly in the prompt: `change only X; keep Y unchanged`.
+
+```bash
+"$SKILL_DIR/scripts/codex-generate-image.sh" --out assets/<role>-v2.png --edit assets/<role>.png --prompt-file <edit-prompt.txt>
+```
+
+One asset per run, one new output path per run. The wrapper refuses to overwrite and leaves the Codex original under `~/.codex/generated_images/` as the preserved source.
+
+On the delegated route, verify before accepting, in this order:
+
+1. `VERIFIED_ON_DISK` — the wrapper confirmed the file itself; a `SAVED` line alone is the subagent's claim, not evidence.
+2. `ASSUMPTIONS` — a subagent that reinterpreted subject, palette, background, or composition invalidates the asset even when a file exists. Rewrite the prompt and regenerate to a new path.
+3. Read the file at intended size and judge it against the Visual Genome and the evaluation gates.
+
+On either route, do not claim that an asset was saved locally unless the tool or wrapper actually confirms a usable file on disk. If no local output is available, report the integration blocker instead of inventing a filename or using an unrelated placeholder.
 
 ## Deterministic color-key removal
 
 Use deterministic color-key removal only when the source uses one exact, uniform supported key that is absent from the subject. It removes external and enclosed key regions and performs color unmix/despill at antialiased edges.
 
 ```bash
-scripts/remove-color-key.swift --key green input.png output-transparent.png
-scripts/remove-color-key.swift --key blue input.png output-transparent.png
-scripts/remove-color-key.swift --key magenta input.png output-transparent.png
-scripts/inspect-image-asset.sh --require-alpha output-transparent.png
+"$SKILL_DIR/scripts/remove-color-key.swift" --key green input.png output-transparent.png
+"$SKILL_DIR/scripts/remove-color-key.swift" --key blue input.png output-transparent.png
+"$SKILL_DIR/scripts/remove-color-key.swift" --key magenta input.png output-transparent.png
+"$SKILL_DIR/scripts/inspect-image-asset.sh" --require-alpha output-transparent.png
 ```
 
 The legacy magenta route remains available for compatibility:
 
 ```bash
-scripts/remove-magenta-key.swift input.png output-transparent.png
+"$SKILL_DIR/scripts/remove-magenta-key.swift" input.png output-transparent.png
 ```
 
 Do not use a key script for a gradient, shadowed key, mixed background, subject containing important key-colored detail, or unsupported color. Preserve the input and always choose a new output path.
@@ -148,14 +170,14 @@ Do not use a key script for a gradient, shadowed key, mixed background, subject 
 When the background is simple but is not an exact supported key, use the bundled macOS Vision route:
 
 ```bash
-scripts/remove-image-background.swift input.png output-transparent.png
-scripts/inspect-image-asset.sh --require-alpha output-transparent.png
+"$SKILL_DIR/scripts/remove-image-background.swift" input.png output-transparent.png
+"$SKILL_DIR/scripts/inspect-image-asset.sh" --require-alpha output-transparent.png
 ```
 
 The optional final `trim-radius` accepts `0` through `24`; begin with the default `3` and increase only when visual inspection proves a wider baked matte:
 
 ```bash
-scripts/remove-image-background.swift input.png output-transparent.png 8
+"$SKILL_DIR/scripts/remove-image-background.swift" input.png output-transparent.png 8
 ```
 
 Semantic foreground masks may clean the outside while leaving key color inside brackets, cables, arrays, or other enclosed gaps. Do not treat a clean outer contour as proof of completion. Increasing erosion can also delete thin hardware; choose deterministic removal when the exact key is known.
@@ -177,7 +199,7 @@ Reject a baked checkerboard immediately when metadata reports no alpha. Repeated
 Run:
 
 ```bash
-scripts/inspect-image-asset.sh --require-alpha path/to/asset.png
+"$SKILL_DIR/scripts/inspect-image-asset.sh" --require-alpha path/to/asset.png
 ```
 
 Preview the output on checkerboard, near-white, and near-black surfaces at master and intended CSS sizes. Reject clipped silhouettes, shadows outside the subject, key-colored internal gaps, fringe, transparent subject holes, lost hardware, hard stair-stepping, or detail that collapses at target size.

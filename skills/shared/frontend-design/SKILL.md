@@ -1,7 +1,7 @@
 ---
 name: frontend-design
 description: Guidance for distinctive, intentional visual design when building new UI or reshaping an existing one. Helps with aesthetic direction, typography, and making choices that don't read as templated defaults.
-compat: [codex]
+compat: [claude-code, codex]
 license: Complete terms in LICENSE.txt
 metadata:
   short-description: Distinctive, intentional frontend design direction
@@ -63,4 +63,4 @@ For implementation work, read and follow [QUALITY_GATE.md](QUALITY_GATE.md). It 
 
 ## Provenance
 
-The core design guidance is adapted from Anthropic's Apache-2.0-licensed [`frontend-design`](https://github.com/anthropics/skills/tree/main/skills/frontend-design) skill. This repository copy adds Codex compatibility metadata and the local delivery quality gate above; see [LICENSE.txt](LICENSE.txt).
+The core design guidance is adapted from Anthropic's Apache-2.0-licensed [`frontend-design`](https://github.com/anthropics/skills/tree/main/skills/frontend-design) skill. This repository copy adds cross-platform (Claude Code + Codex) compatibility metadata and the local delivery quality gate above; see [LICENSE.txt](LICENSE.txt).

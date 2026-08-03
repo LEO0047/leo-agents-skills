@@ -1,8 +1,8 @@
 ---
 name: openai-frontend-design
 description: Direct and implement narrative-led frontend experiences with OpenAI-generated imagery. Use for GPT/OpenAI-generated website visuals, image-first art direction, or custom frontend assets. Construct a project-specific Visual Genome, integrate accepted imagery into the real interface, and verify desktop and mobile screenshots without turning one prior aesthetic or one technical effect into a global template.
-compat: [codex]
-compatibility: Requires the native image_gen__imagegen tool for generation or editing, view_image for local visual inspection, and macOS sips for deterministic image metadata checks.
+compat: [claude-code, codex]
+compatibility: Requires macOS with sips (and swift for matting). On Codex, requires the native image_gen__imagegen tool for generation or editing and view_image for local visual inspection. On Claude Code, requires the bundled Codex CLI reached through scripts/codex-generate-image.sh for generation or editing, the Read tool for local visual inspection, and a browser tool for implemented-page screenshots.
 metadata:
   short-description: Design frontend UI with OpenAI-generated visual assets
 ---
@@ -27,19 +27,45 @@ Then route to these references:
 - Read [`references/technology-capability-map.md`](references/technology-capability-map.md) before proposing advanced motion, WebGL, shaders, smooth scrolling, or a third-party visual package.
 - Read [`references/evaluation-gates.md`](references/evaluation-gates.md) before accepting visual assets or reporting a frontend as visually verified.
 
+## Image generation route
+
+Pick the route that matches the running platform:
+
+**On Codex** — call the native `image_gen__imagegen` tool directly and inspect results with `view_image`. No wrapper is involved.
+
+**On Claude Code** — this agent has no built-in image generation tool. OpenAI image generation is reached by delegating one non-interactive turn to the bundled Codex CLI, which owns the native `image_gen__imagegen` tool and reuses the existing ChatGPT login. No API key is involved.
+
+Always go through the wrapper rather than composing a Codex invocation by hand. Every `scripts/` and `references/` path in this skill is relative to the skill directory, not the project working directory; set `SKILL_DIR` once per session to wherever this skill is installed (for example `~/.claude/skills/openai-frontend-design` or `~/.codex/skills/openai-frontend-design`) and use it:
+
+```bash
+SKILL_DIR="$HOME/.claude/skills/openai-frontend-design"
+"$SKILL_DIR/scripts/codex-generate-image.sh" --out assets/hero-subject.png --prompt-file /tmp/hero-prompt.txt
+"$SKILL_DIR/scripts/codex-generate-image.sh" --out assets/hero-v2.png --edit assets/hero-subject.png --prompt-file /tmp/hero-edit.txt
+```
+
+The wrapper refuses to overwrite an existing output path, keeps the Codex original under `~/.codex/generated_images/`, and confirms the result from the filesystem rather than from the subagent's own claim. It prints `SAVED`, `ORIGINAL`, `METADATA`, `ASSUMPTIONS`, and `VERIFIED_ON_DISK`.
+
+On the delegated route, treat the delegated turn as an untrusted generator, not a design partner:
+
+- Write the complete image prompt yourself from the Visual Genome. Never delegate art direction, subject choice, or palette decisions.
+- Read `ASSUMPTIONS` on every run. A subagent that reinterpreted the subject invalidates the asset even when a file exists.
+- Inspect the returned file with the Read tool before accepting it. A `SAVED` line is not evidence of a usable image.
+- Report an integration blocker rather than inventing a filename if no file lands on disk.
+
 ## Authorization boundary
 
-An explicit invocation of `$openai-frontend-design`, or an explicit request for OpenAI/GPT-generated frontend assets, authorizes native `image_gen__imagegen` calls, creation of new local image assets, and non-destructive local background matting within the stated frontend scope. Preserve generated originals and write edited or transparent results to new paths.
+An explicit invocation of `openai-frontend-design`, or an explicit request for OpenAI/GPT-generated frontend assets, authorizes image generation through the platform route above (native `image_gen__imagegen` calls on Codex; `scripts/codex-generate-image.sh` runs on Claude Code), creation of new local image assets, and non-destructive local background matting within the stated frontend scope. Preserve generated originals and write edited or transparent results to new paths.
 
-It does not authorize RunComfy or another external model router, dependency installation, overwriting or deleting existing assets, unrelated imagery, remote uploads, commit, push, PR, publish, or deploy. A technology recommendation is not installation permission.
+It does not authorize RunComfy or another external model router, dependency installation, overwriting or deleting existing assets, unrelated imagery, remote uploads, commit, push, PR, publish, or deploy. A technology recommendation is not installation permission. Widening the Codex sandbox beyond the wrapper's `workspace-write` scope, or passing `--dangerously-bypass-approvals-and-sandbox`, is outside this skill.
 
 ## Model identity and provenance
 
-Treat a ChatGPT product label, an API model ID, and the Codex tool route as separate facts. The native `image_gen__imagegen` tool does not expose a trustworthy model selector or model ID in this skill's contract.
+Treat a ChatGPT product label, an API model ID, and the Codex tool route as separate facts. The native `image_gen__imagegen` tool does not expose a trustworthy model selector or model ID in this skill's contract, and on the delegated route the extra hop adds a second unverified layer.
 
 - Never claim `gpt-image-2` or another exact model unless the tool or an explicitly authorized API response proves it.
+- The Codex model reported by `-m` or `~/.codex/config.toml` is the driving agent, not the image model. Never present it as the image model.
 - If hard model pinning is required, report native routing as unverified.
-- When provenance matters, describe the result as `OpenAI native image generation / model ID unverified`.
+- When provenance matters, describe the result as `OpenAI native image generation / model ID unverified` (append `via delegated Codex turn` on the delegated route).
 
 ## Required Visual Genome contract
 
@@ -112,10 +138,10 @@ If three or more repeat together, revise at least one Visual Genome axis before 
 5. Map each major section to its story job, visual intensity, text-safe region, transition, and relationship to the conversion path.
 6. Write an asset manifest and choose `vector`, `generated-raster`, or `compare` for every planned visual role.
 7. Establish a shared visual bible: realism mode, palette, materials, practical-light behavior, camera language, depth, texture, recurring motif, copy rhythm, and forbidden elements.
-8. Generate only assets that materially support the plan. Keep small functional controls vector-based.
-9. Inspect each result at intended size against the reference hierarchy, physical-world thesis, neighboring content, and evaluation gates.
+8. Generate only assets that materially support the plan, one generation run per asset through the platform route, with a prompt you wrote from the Visual Genome. Keep small functional controls vector-based.
+9. Inspect every returned file (and its `ASSUMPTIONS` line on the delegated route) at intended size against the reference hierarchy, physical-world thesis, neighboring content, and evaluation gates.
 10. Integrate accepted assets with real HTML copy, controls, overlays, responsive crops, intrinsic dimensions, loading behavior, and accessible semantics.
-11. Capture the implemented page at representative desktop and narrow-mobile sizes after fonts and images load. Add full-page, key-section, first-load, scrolled, Safari, or CJK captures when the changed surface requires them.
+11. Capture the implemented page at representative desktop and narrow-mobile viewports after fonts and images load, resizing between captures rather than assuming one size generalizes. Add full-page, key-section, first-load, scrolled, Safari, or CJK captures when the changed surface requires them. If the available browser tool is Chromium-only, report a required Safari or WebKit check as `未執行` instead of implying it was run.
 12. Complete at least one focused correction pass for any material issue, rerun relevant checks, and report only the evidence actually inspected.
 
 ## Non-negotiable gates
@@ -136,7 +162,7 @@ Report separately:
 - anti-copy evidence or the explicit `Uncertainty` state;
 - generated, edited, selected, rejected, and vector-retained assets;
 - provenance, alpha metadata, and light/dark target-size edge inspection where relevant;
-- desktop, mobile, and any required full-page, key-section, Safari, CJK, first-load, or scrolled screenshot review;
+- desktop, mobile, and any required full-page, key-section, CJK, first-load, or scrolled screenshot review, plus any Safari/WebKit check left unrun;
 - the focused correction pass and its result;
 - relevant lint, typecheck, test, or build results;
 - technology recommendations, live-verification status, fallbacks, and any unapproved dependency blocker.
