@@ -1,0 +1,27 @@
+name: validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Repo validation (frontmatter, compat, links, README index, shell syntax)
+        run: ruby scripts/validate-repo.rb
+
+      - name: Python syntax check
+        run: python3 -m compileall -q skills/
+
+      - name: hatch-pet tests
+        run: |
+          pip install --quiet pytest pillow
+          python3 -m pytest skills/codex/hatch-pet/tests/ -q
+
+      - name: voice-notes tests
+        run: |
+          python3 -m pytest skills/shared/voice-notes/scripts/test_fusion.py -q

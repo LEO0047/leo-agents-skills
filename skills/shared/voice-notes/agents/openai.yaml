@@ -1,0 +1,4 @@
+interface:
+  display_name: "Voice Notes"
+  short_description: "本機多人錄音轉錄、時間對齊、說話者標記與字幕輸出"
+  default_prompt: "Use $voice-notes to turn a local recording into speaker-labeled notes and subtitle files."

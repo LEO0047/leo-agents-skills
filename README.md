@@ -36,7 +36,17 @@ commands/
 ruby scripts/validate-repo.rb
 ```
 
-檢查範圍包含 frontmatter、`compat` 與 bucket 一致性、skill 名稱、YAML、相對連結、README 索引，以及 shell script 的執行權限與語法。
+檢查範圍包含 frontmatter、`compat` 與 bucket 一致性、skill 名稱、YAML、相對連結、README 索引，以及 shell script 的執行權限與語法。push 到 GitHub 後 CI（GitHub Actions）會自動重跑同一套驗證加上 Python 測試。
+
+### 漂移偵測
+
+repo 是 ground truth，本機 `~/.claude/skills/`、`~/.codex/skills/` 的安裝副本應與 repo 一致。檢查：
+
+```bash
+scripts/check-drift.sh
+```
+
+改了安裝點就回寫 repo；改了 repo 就重新部署安裝點。`<!-- LEO_*_OVERLAY -->` 標記之間是本機個人覆蓋層，刻意不入公開庫，比對時自動忽略。
 
 ## 現有 skill 索引
 
@@ -46,6 +56,9 @@ ruby scripts/validate-repo.rb
 | [graphify](skills/shared/graphify/) | 任意資料夾 → 知識圖譜（互動 HTML + JSON + 稽核報告） |
 | [html-artifacts](skills/shared/html-artifacts/) | 判斷何時把 Agent 輸出升級成自包含 HTML artifact，而不是每次都用 HTML |
 | [find-skills](skills/shared/find-skills/) | 在 skill 生態裡搜尋與安裝可重用的 skill |
+| [frontend-design](skills/shared/frontend-design/) | Anthropic 設計原則 + 本機 frontend delivery quality gate |
+| [openai-frontend-design](skills/shared/openai-frontend-design/) | 以 OpenAI 原生生圖補強前端美術（Codex 原生工具 / Claude Code 走 wrapper 雙路由） |
+| [voice-notes](skills/shared/voice-notes/) | 本機多人錄音 → 時間對齊、說話者標記的逐字稿與字幕（全程不上傳音檔） |
 
 ### claude
 | Skill | 一句話 |
@@ -56,12 +69,10 @@ ruby scripts/validate-repo.rb
 | Skill | 一句話 |
 |---|---|
 | [chronicle](skills/codex/chronicle/) | 讓 agent 看到使用者螢幕近幾小時的滾動緩衝 |
-| [frontend-design](skills/codex/frontend-design/) | Anthropic 設計原則的 Codex 版本，加入本機 frontend delivery quality gate |
 | [game-mod-management](skills/codex/game-mod-management/) | 遊戲 mod repo 與本機流程管理，特別是 BG3 存檔救援、manifest、load order 與驗證 |
 | [game-modops-agent](skills/codex/game-modops-agent/) | Game ModOps v3 Windows 控制塔，協調 Nexus、Vortex、Wabbajack、MO2、LOOT 與 BG3 工具 |
-| [hatch-pet](skills/codex/hatch-pet/) | 從角色概念或參考圖製作 Codex 寵物動畫 spritesheet |
+| [hatch-pet](skills/codex/hatch-pet/) | 從角色概念或參考圖製作 Codex 寵物動畫 spritesheet（v2 世代：16 向 look、direction-blind QA、附測試） |
 | [nexus-mod-automation](skills/codex/nexus-mod-automation/) | 安全自動化 Nexus Mods / Vortex 下載佇列、監控、壓縮檔檢查與報告 |
-| [openai-frontend-design](skills/codex/openai-frontend-design/) | 以 OpenAI 原生生圖補強前端美術，同時保留功能性小 icon 的向量優勢 |
 | [playwright](skills/codex/playwright/) | 終端機驅動真實瀏覽器做自動化 |
 | [raid-shadow-legends-ops](skills/codex/raid-shadow-legends-ops/) | 透過繁體中文 RAID UI 執行安全、具停損規則的日常與戰鬥操作 |
 | [windows-ui-automation](skills/codex/windows-ui-automation/) | 透過 PowerShell UI Automation 操作 Windows 桌面應用與控制項 |
@@ -83,11 +94,11 @@ ln -s "$(pwd)/skills/claude/codex-handoff" ~/.claude/skills/codex-handoff
 # Codex 同理
 ln -s "$(pwd)/skills/shared/find-skills" ~/.codex/skills/find-skills
 ln -s "$(pwd)/skills/codex/chronicle" ~/.codex/skills/chronicle
-ln -s "$(pwd)/skills/codex/frontend-design" ~/.codex/skills/frontend-design
-ln -s "$(pwd)/skills/codex/openai-frontend-design" ~/.codex/skills/openai-frontend-design
+ln -s "$(pwd)/skills/shared/frontend-design" ~/.codex/skills/frontend-design
+ln -s "$(pwd)/skills/shared/openai-frontend-design" ~/.codex/skills/openai-frontend-design
 ```
 
-未來會補一支 `scripts/install.sh` 自動處理（symlink 模式）。
+目前這台 Mac 實際採「複製 + `scripts/check-drift.sh` 偵測漂移」模式；symlink 模式待驗證兩平台支援後再統一。
 
 ## 貢獻自己的 skill
 
