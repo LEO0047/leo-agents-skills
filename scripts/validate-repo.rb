@@ -5,6 +5,10 @@ require "open3"
 require "pathname"
 require "yaml"
 
+# 空 locale（launchd/cron/CI）下 Ruby 預設 US-ASCII，讀中文檔會 crash；一律強制 UTF-8
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
+
 ROOT = Pathname.new(__dir__).join("..").realpath
 ALLOWED_COMPAT = %w[claude-code codex].freeze
 EXPECTED_COMPAT = {

@@ -77,7 +77,7 @@ When the user says to run timed/event dungeons or "打到打不過":
 Before resuming an interrupted RAID session, check for the latest RAID handoff/checkpoint notes in:
 
 ```text
-/Users/leo/.codex/memories/extensions/ad_hoc/notes/
+~/.codex/memories/extensions/ad_hoc/notes/
 ```
 
 Look for filenames matching `*raid*checkpoint*.md`, `*raid*session*.md`, or `*raid*maintenance*.md`. Treat the newest relevant note as the current temporary gameplay state. These notes may contain last cleared stages, failed stages, maintenance status, visible resources, and user-adjusted team constraints.
@@ -85,7 +85,7 @@ Look for filenames matching `*raid*checkpoint*.md`, `*raid*session*.md`, or `*ra
 Known current checkpoint file from this workflow:
 
 ```text
-/Users/leo/.codex/memories/extensions/ad_hoc/notes/20260519-191242-raid-maintenance-session-checkpoint.md
+~/.codex/memories/extensions/ad_hoc/notes/20260519-191242-raid-maintenance-session-checkpoint.md
 ```
 
 Do not commit these ad-hoc checkpoint notes to the skill repo. They are local session memory, while this skill stores durable operating rules.
@@ -112,7 +112,7 @@ Autonomous learning loop:
 1. Notice friction: slow clicks, repeated tool timeouts, coordinate drift, unnecessary screen reads, team reset behavior, or new UI prompts.
 2. Test the faster method on a low-risk action or after confirming the current screen.
 3. If reliable, record it in this skill with the exact UI context and coordinate/workflow.
-4. If the improvement should persist across sessions, add a short ad-hoc memory note under `/Users/leo/.codex/memories/extensions/ad_hoc/notes/`.
+4. If the improvement should persist across sessions, add a short ad-hoc memory note under `~/.codex/memories/extensions/ad_hoc/notes/`.
 5. If the improvement changes ownership between skills, update the delegating skill such as `game-modops-agent`.
 6. Mention the update in the final report, including whether it was committed.
 
