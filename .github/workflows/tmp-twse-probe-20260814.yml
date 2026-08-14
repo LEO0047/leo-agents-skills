@@ -1,0 +1,343 @@
+name: Temporary TWSE endpoint probe
+
+on:
+  push:
+    branches:
+      - tmp/twse-probe-20260814
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Run exact probes and fetch public JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          python3 - <<'PY'
+          import urllib.request, urllib.error, urllib.parse, http.cookiejar
+          import json, re, html as htmlmod, os, platform, socket, traceback
+          from pathlib import Path
+
+          OUT = Path('out')
+          OUT.mkdir(exist_ok=True)
+          UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0 Safari/537.36'
+          SECURITY = '安全性考量'
+
+          def decode(raw):
+              return raw.decode('utf-8', 'ignore')
+
+          def classify_exact(name, url, body=None):
+              headers = {
+                  'User-Agent': UA,
+                  'Content-Type': 'application/json',
+              }
+              result = {'name': name, 'url': url}
+              try:
+                  req = urllib.request.Request(url, data=body, headers=headers)
+                  with urllib.request.urlopen(req, timeout=60) as r:
+                      raw = r.read()
+                      text = decode(raw)
+                      result.update({
+                          'classification': '被擋' if SECURITY in text else '正常',
+                          'http_status': getattr(r, 'status', None),
+                          'length': len(text),
+                          'contains_security_text': SECURITY in text,
+                          'content_type': r.headers.get('Content-Type', ''),
+                          'preview': text[:300],
+                      })
+              except urllib.error.HTTPError as e:
+                  raw = e.read()
+                  text = decode(raw)
+                  result.update({
+                      'classification': '被擋' if SECURITY in text else '錯誤',
+                      'http_status': e.code,
+                      'length': len(text),
+                      'contains_security_text': SECURITY in text,
+                      'error': f'HTTPError {e.code}: {e.reason}',
+                      'preview': text[:500],
+                  })
+              except Exception as e:
+                  result.update({
+                      'classification': '錯誤',
+                      'error': f'{type(e).__name__}: {e}',
+                  })
+              print('EXACT_PROBE', json.dumps(result, ensure_ascii=False))
+              return result
+
+          probe = []
+          listed_url = 'https://openapi.twse.com.tw/v1/opendata/t187ap03_L'
+          esg_url = 'https://esggenplus.twse.com.tw/api/api/MopsSustainReport/data'
+          esg_body = json.dumps({
+              'marketType': 0,
+              'industryNameList': [],
+              'companyCodeList': [],
+              'year': 2024,
+          }).encode()
+          probe.append(classify_exact('上市基本資料', listed_url, None))
+          probe.append(classify_exact('ESG報告書清單', esg_url, esg_body))
+
+          fetch = {}
+
+          # 1) 上市公司基本資料
+          try:
+              req = urllib.request.Request(listed_url, headers={'User-Agent': UA})
+              with urllib.request.urlopen(req, timeout=90) as r:
+                  text = decode(r.read())
+              data = json.loads(text)
+              if not isinstance(data, list) or not data:
+                  raise ValueError('response is not a non-empty JSON list')
+              (OUT / 'twse_listed.json').write_text(
+                  json.dumps(data, ensure_ascii=False), encoding='utf-8')
+              fetch['twse_listed.json'] = {
+                  'ok': True,
+                  'records': len(data),
+                  'bytes': (OUT / 'twse_listed.json').stat().st_size,
+                  'source': listed_url,
+              }
+          except Exception as e:
+              fetch['twse_listed.json'] = {
+                  'ok': False, 'error': f'{type(e).__name__}: {e}'}
+              traceback.print_exc()
+
+          # 2) 員工人數（先照使用者 URL，失敗再測目前原版站 mopsov）
+          def clean_cell(value):
+              value = re.sub(r'<[^>]+>', '', value)
+              value = htmlmod.unescape(value).replace('\xa0', '').strip()
+              return re.sub(r'\s+', ' ', value)
+
+          def parse_employee_html(text):
+              emp = {}
+              for row in re.findall(r'<tr[^>]*>(.*?)</tr>', text, re.S | re.I):
+                  td = [clean_cell(c) for c in re.findall(
+                      r'<td[^>]*>(.*?)</td>', row, re.S | re.I)]
+                  if len(td) >= 7 and re.fullmatch(r'\d{4}', td[1] or ''):
+                      try:
+                          emp[td[1]] = int(float(td[6].replace(',', '')))
+                      except ValueError:
+                          pass
+              return emp
+
+          try:
+              emp = {}
+              employee_attempts = []
+              for market in ('sii', 'otc'):
+                  form = urllib.parse.urlencode({
+                      'encodeURIComponent': 1,
+                      'step': 1,
+                      'firstin': 1,
+                      'off': 1,
+                      'TYPEK': market,
+                      'RYEAR': '114',
+                  }).encode()
+                  market_data = {}
+                  for base in ('https://mops.twse.com.tw', 'https://mopsov.twse.com.tw'):
+                      url = base + '/mops/web/ajax_t100sb14'
+                      headers = {
+                          'User-Agent': UA,
+                          'Content-Type': 'application/x-www-form-urlencoded',
+                          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                          'Origin': base,
+                          'Referer': base + '/mops/web/t100sb14',
+                      }
+                      attempt = {'market': market, 'url': url}
+                      try:
+                          req = urllib.request.Request(url, data=form, headers=headers)
+                          with urllib.request.urlopen(req, timeout=90) as r:
+                              text = decode(r.read())
+                              attempt['http_status'] = getattr(r, 'status', None)
+                          parsed = parse_employee_html(text)
+                          attempt.update({
+                              'length': len(text),
+                              'contains_security_text': SECURITY in text,
+                              'records': len(parsed),
+                              'preview': re.sub(r'\s+', ' ', text[:260]),
+                          })
+                          if parsed:
+                              market_data = parsed
+                      except urllib.error.HTTPError as e:
+                          text = decode(e.read())
+                          attempt.update({
+                              'http_status': e.code,
+                              'error': f'HTTPError {e.code}: {e.reason}',
+                              'length': len(text),
+                              'contains_security_text': SECURITY in text,
+                              'preview': re.sub(r'\s+', ' ', text[:260]),
+                          })
+                      except Exception as e:
+                          attempt['error'] = f'{type(e).__name__}: {e}'
+                      employee_attempts.append(attempt)
+                      print('EMPLOYEE_ATTEMPT', json.dumps(attempt, ensure_ascii=False))
+                      if market_data:
+                          break
+                  emp.update(market_data)
+              if not emp:
+                  raise RuntimeError('上市與上櫃皆解析為 0 筆')
+              (OUT / 'twse_employees.json').write_text(
+                  json.dumps(emp, ensure_ascii=False), encoding='utf-8')
+              fetch['twse_employees.json'] = {
+                  'ok': True,
+                  'records': len(emp),
+                  'bytes': (OUT / 'twse_employees.json').stat().st_size,
+                  'attempts': employee_attempts,
+              }
+          except Exception as e:
+              fetch['twse_employees.json'] = {
+                  'ok': False,
+                  'error': f'{type(e).__name__}: {e}',
+                  'attempts': locals().get('employee_attempts', []),
+              }
+              traceback.print_exc()
+
+          # 3) 2024 永續報告書清單。先照裸 POST；若不行，再走網站目前的 antiforgery 流程。
+          def post_json(opener, url, payload, headers):
+              body = json.dumps(payload).encode()
+              req = urllib.request.Request(url, data=body, headers=headers)
+              with opener.open(req, timeout=90) as r:
+                  text = decode(r.read())
+                  return getattr(r, 'status', None), text
+
+          try:
+              jar = http.cookiejar.CookieJar()
+              opener = urllib.request.build_opener(
+                  urllib.request.HTTPCookieProcessor(jar))
+              common = {
+                  'User-Agent': UA,
+                  'Accept': 'application/json, text/plain, */*',
+                  'Content-Type': 'application/json',
+                  'Origin': 'https://esggenplus.twse.com.tw',
+                  'Referer': 'https://esggenplus.twse.com.tw/inquiry/report',
+              }
+
+              # Prime session and obtain current anti-forgery token.
+              home_req = urllib.request.Request(
+                  'https://esggenplus.twse.com.tw/',
+                  headers={'User-Agent': UA})
+              with opener.open(home_req, timeout=60) as r:
+                  home_status = getattr(r, 'status', None)
+                  home_len = len(r.read())
+              token_req = urllib.request.Request(
+                  'https://esggenplus.twse.com.tw/api/api/Antiforgery/token',
+                  headers={
+                      'User-Agent': UA,
+                      'Accept': 'application/json, text/plain, */*',
+                      'Referer': 'https://esggenplus.twse.com.tw/inquiry/report',
+                  })
+              with opener.open(token_req, timeout=60) as r:
+                  token_text = decode(r.read())
+                  token_status = getattr(r, 'status', None)
+              token_json = json.loads(token_text)
+              token = token_json.get('data') if isinstance(token_json, dict) else None
+              if isinstance(token, dict):
+                  token = token.get('token') or token.get('requestVerificationToken')
+              if not isinstance(token, str) or len(token) < 20:
+                  raise RuntimeError('Antiforgery token missing or malformed')
+              common['RequestVerificationToken'] = token
+              print('ESG_HANDSHAKE', json.dumps({
+                  'home_status': home_status,
+                  'home_bytes': home_len,
+                  'token_status': token_status,
+                  'token_length': len(token),
+                  'cookies': [c.name for c in jar],
+              }, ensure_ascii=False))
+
+              all_reports = []
+              esg_attempts = []
+              for mt in (0, 1, 2):
+                  payload = {
+                      'marketType': mt,
+                      'industryNameList': [],
+                      'companyCodeList': [],
+                      'year': 2024,
+                  }
+                  attempt = {'marketType': mt}
+                  try:
+                      status, text = post_json(opener, esg_url, payload, common)
+                      attempt.update({
+                          'http_status': status,
+                          'length': len(text),
+                          'contains_security_text': SECURITY in text,
+                      })
+                      obj = json.loads(text)
+                      records = obj.get('data', []) if isinstance(obj, dict) else []
+                      attempt['records'] = len(records)
+                      attempt['success'] = obj.get('success') if isinstance(obj, dict) else None
+                      attempt['message'] = obj.get('message') if isinstance(obj, dict) else None
+                      all_reports.extend(records)
+                  except urllib.error.HTTPError as e:
+                      text = decode(e.read())
+                      attempt.update({
+                          'http_status': e.code,
+                          'error': f'HTTPError {e.code}: {e.reason}',
+                          'length': len(text),
+                          'contains_security_text': SECURITY in text,
+                          'preview': text[:300],
+                      })
+                  except Exception as e:
+                      attempt['error'] = f'{type(e).__name__}: {e}'
+                  esg_attempts.append(attempt)
+                  print('ESG_ATTEMPT', json.dumps(attempt, ensure_ascii=False))
+
+              if not all_reports:
+                  raise RuntimeError('三個 marketType 合計為 0 筆')
+              (OUT / 'twse_esg_reports.json').write_text(
+                  json.dumps(all_reports, ensure_ascii=False), encoding='utf-8')
+              fetch['twse_esg_reports.json'] = {
+                  'ok': True,
+                  'records': len(all_reports),
+                  'bytes': (OUT / 'twse_esg_reports.json').stat().st_size,
+                  'attempts': esg_attempts,
+              }
+          except Exception as e:
+              fetch['twse_esg_reports.json'] = {
+                  'ok': False,
+                  'error': f'{type(e).__name__}: {e}',
+                  'attempts': locals().get('esg_attempts', []),
+              }
+              traceback.print_exc()
+
+          # Ephemeral cloud-runner network information.
+          network = {
+              'type': 'GitHub-hosted Actions cloud VM',
+              'runner_os': os.environ.get('RUNNER_OS'),
+              'runner_arch': os.environ.get('RUNNER_ARCH'),
+              'hostname': socket.gethostname(),
+              'platform': platform.platform(),
+          }
+          for label, url in (
+              ('public_ip', 'https://api.ipify.org?format=json'),
+              ('ip_metadata', 'https://ipinfo.io/json'),
+          ):
+              try:
+                  req = urllib.request.Request(url, headers={'User-Agent': UA})
+                  with urllib.request.urlopen(req, timeout=20) as r:
+                      network[label] = json.loads(decode(r.read()))
+              except Exception as e:
+                  network[label + '_error'] = f'{type(e).__name__}: {e}'
+
+          summary = {
+              'exact_probe': probe,
+              'fetch': fetch,
+              'network': network,
+          }
+          (OUT / 'probe_result.json').write_text(
+              json.dumps(summary, ensure_ascii=False, indent=2), encoding='utf-8')
+          print('FINAL_SUMMARY', json.dumps(summary, ensure_ascii=False))
+          PY
+
+          echo '--- output files ---'
+          find out -maxdepth 1 -type f -printf '%f %s bytes\n' | sort
+
+      - name: Upload probe results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twse-probe-results
+          path: out/
+          if-no-files-found: error
+          retention-days: 1
