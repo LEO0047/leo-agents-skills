@@ -1,0 +1,416 @@
+name: Temporary TWSE network probe
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Probe TWSE endpoints and fetch requested JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p twse-results
+          python3 - <<'PY'
+          import html as htmlmod
+          import http.cookiejar
+          import json
+          import os
+          import re
+          import ssl
+          import traceback
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          OUT = Path("twse-results")
+          OUT.mkdir(exist_ok=True)
+          SECURITY_TEXT = "安全性考量"
+          UA = (
+              "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+              "AppleWebKit/537.36 Chrome/120.0 Safari/537.36"
+          )
+          JSON_HEADERS = {"User-Agent": UA, "Content-Type": "application/json"}
+          CTX = ssl.create_default_context()
+
+          def decode_bytes(raw, headers=None):
+              charset = None
+              if headers is not None:
+                  try:
+                      charset = headers.get_content_charset()
+                  except Exception:
+                      charset = None
+              for enc in [charset, "utf-8", "big5", "cp950"]:
+                  if not enc:
+                      continue
+                  try:
+                      return raw.decode(enc)
+                  except Exception:
+                      pass
+              return raw.decode("utf-8", "ignore")
+
+          def classify(status, text, error=None):
+              if SECURITY_TEXT in text:
+                  return "被擋"
+              if status is not None and 200 <= status < 300:
+                  return "正常"
+              if status in (401, 403, 429):
+                  return "被擋"
+              return "錯誤"
+
+          def exact_probe(name, url, body=None):
+              result = {"name": name, "url": url}
+              try:
+                  req = urllib.request.Request(url, data=body, headers=JSON_HEADERS)
+                  with urllib.request.urlopen(req, timeout=60, context=CTX) as r:
+                      raw = r.read()
+                      text = decode_bytes(raw, r.headers)
+                      status = getattr(r, "status", None)
+                      result.update(
+                          http_status=status,
+                          length=len(text),
+                          contains_security_text=SECURITY_TEXT in text,
+                          classification=classify(status, text),
+                          content_type=r.headers.get("Content-Type", ""),
+                          preview=text[:500],
+                      )
+              except urllib.error.HTTPError as e:
+                  raw = e.read()
+                  text = decode_bytes(raw, e.headers)
+                  result.update(
+                      http_status=e.code,
+                      length=len(text),
+                      contains_security_text=SECURITY_TEXT in text,
+                      classification=classify(e.code, text, e),
+                      error=f"HTTPError {e.code} {e.reason}",
+                      content_type=e.headers.get("Content-Type", "") if e.headers else "",
+                      preview=text[:1000],
+                  )
+              except Exception as e:
+                  result.update(
+                      classification="錯誤",
+                      error=f"{type(e).__name__}: {e}",
+                  )
+              print("PROBE", json.dumps(result, ensure_ascii=False))
+              return result
+
+          def fetch_text(url, data=None, headers=None, timeout=90, opener=None):
+              request_headers = {"User-Agent": UA}
+              if headers:
+                  request_headers.update(headers)
+              req = urllib.request.Request(url, data=data, headers=request_headers)
+              active = opener.open if opener else urllib.request.urlopen
+              if opener:
+                  r = active(req, timeout=timeout)
+              else:
+                  r = active(req, timeout=timeout, context=CTX)
+              with r:
+                  raw = r.read()
+                  return decode_bytes(raw, r.headers), getattr(r, "status", None), dict(r.headers)
+
+          probe_results = []
+          probe_results.append(
+              exact_probe(
+                  "上市基本資料",
+                  "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+              )
+          )
+          esg_probe_body = json.dumps(
+              {
+                  "marketType": 0,
+                  "industryNameList": [],
+                  "companyCodeList": [],
+                  "year": 2024,
+              }
+          ).encode()
+          probe_results.append(
+              exact_probe(
+                  "ESG報告書清單",
+                  "https://esggenplus.twse.com.tw/api/api/MopsSustainReport/data",
+                  esg_probe_body,
+              )
+          )
+
+          fetch_results = {}
+
+          # 1) 上市公司基本資料
+          try:
+              text, status, headers = fetch_text(
+                  "https://openapi.twse.com.tw/v1/opendata/t187ap03_L"
+              )
+              if SECURITY_TEXT in text:
+                  raise RuntimeError("TWSE OpenAPI returned security block page")
+              listed = json.loads(text)
+              if not isinstance(listed, list) or not listed:
+                  raise ValueError("OpenAPI JSON was not a non-empty list")
+              p = OUT / "twse_listed.json"
+              p.write_text(json.dumps(listed, ensure_ascii=False), encoding="utf-8")
+              fetch_results[p.name] = {
+                  "ok": True,
+                  "records": len(listed),
+                  "bytes": p.stat().st_size,
+                  "http_status": status,
+              }
+          except Exception as e:
+              fetch_results["twse_listed.json"] = {
+                  "ok": False,
+                  "error": f"{type(e).__name__}: {e}",
+              }
+              traceback.print_exc()
+
+          # 2) 員工人數：先照使用者原網域，再嘗試 MOPS 現行原版站 mopsov。
+          def clean_cell(value):
+              value = re.sub(r"<[^>]+>", "", value)
+              value = htmlmod.unescape(value).replace("\xa0", "").strip()
+              return re.sub(r"\s+", " ", value)
+
+          def parse_employees(text):
+              emp = {}
+              for row in re.findall(r"<tr[^>]*>(.*?)</tr>", text, re.S | re.I):
+                  td = [
+                      clean_cell(c)
+                      for c in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S | re.I)
+                  ]
+                  if len(td) >= 7 and re.fullmatch(r"\d{4}", td[1] or ""):
+                      try:
+                          emp[td[1]] = int(float(td[6].replace(",", "")))
+                      except ValueError:
+                          pass
+              return emp
+
+          try:
+              emp = {}
+              attempts = []
+              for market in ("sii", "otc"):
+                  form = urllib.parse.urlencode(
+                      {
+                          "encodeURIComponent": 1,
+                          "step": 1,
+                          "firstin": 1,
+                          "off": 1,
+                          "code": "",
+                          "TYPEK": market,
+                          "RYEAR": "114",
+                      }
+                  ).encode()
+                  market_emp = {}
+                  for host in ("mops.twse.com.tw", "mopsov.twse.com.tw"):
+                      url = f"https://{host}/mops/web/ajax_t100sb14"
+                      headers = {
+                          "Content-Type": "application/x-www-form-urlencoded",
+                          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                          "Origin": f"https://{host}",
+                          "Referer": f"https://{host}/mops/web/t100sb14",
+                      }
+                      try:
+                          text, status, response_headers = fetch_text(
+                              url, data=form, headers=headers, timeout=90
+                          )
+                          parsed = parse_employees(text)
+                          item = {
+                              "market": market,
+                              "host": host,
+                              "http_status": status,
+                              "length": len(text),
+                              "contains_security_text": SECURITY_TEXT in text,
+                              "parsed_records": len(parsed),
+                              "preview": re.sub(r"\s+", " ", text[:500]),
+                          }
+                          attempts.append(item)
+                          print("EMP_ATTEMPT", json.dumps(item, ensure_ascii=False))
+                          if parsed:
+                              market_emp = parsed
+                              break
+                      except urllib.error.HTTPError as e:
+                          body = decode_bytes(e.read(), e.headers)
+                          item = {
+                              "market": market,
+                              "host": host,
+                              "http_status": e.code,
+                              "length": len(body),
+                              "contains_security_text": SECURITY_TEXT in body,
+                              "parsed_records": 0,
+                              "error": f"HTTPError {e.code} {e.reason}",
+                              "preview": re.sub(r"\s+", " ", body[:500]),
+                          }
+                          attempts.append(item)
+                          print("EMP_ATTEMPT", json.dumps(item, ensure_ascii=False))
+                      except Exception as e:
+                          item = {
+                              "market": market,
+                              "host": host,
+                              "parsed_records": 0,
+                              "error": f"{type(e).__name__}: {e}",
+                          }
+                          attempts.append(item)
+                          print("EMP_ATTEMPT", json.dumps(item, ensure_ascii=False))
+                  emp.update(market_emp)
+              if not emp:
+                  raise RuntimeError("Both employee markets parsed as 0 records")
+              p = OUT / "twse_employees.json"
+              p.write_text(json.dumps(emp, ensure_ascii=False), encoding="utf-8")
+              fetch_results[p.name] = {
+                  "ok": True,
+                  "records": len(emp),
+                  "bytes": p.stat().st_size,
+                  "attempts": attempts,
+              }
+          except Exception as e:
+              fetch_results["twse_employees.json"] = {
+                  "ok": False,
+                  "error": f"{type(e).__name__}: {e}",
+                  "attempts": locals().get("attempts", []),
+              }
+              traceback.print_exc()
+
+          # 3) ESG 報告清單：先建立 cookie，再取 antiforgery token 後 POST。
+          try:
+              jar = http.cookiejar.CookieJar()
+              opener = urllib.request.build_opener(
+                  urllib.request.HTTPCookieProcessor(jar),
+                  urllib.request.HTTPSHandler(context=CTX),
+              )
+              base = "https://esggenplus.twse.com.tw"
+              page_headers = {
+                  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                  "Referer": base + "/inquiry/report",
+              }
+              home_text, home_status, _ = fetch_text(
+                  base + "/inquiry/report", headers=page_headers, timeout=60, opener=opener
+              )
+              token_text, token_status, _ = fetch_text(
+                  base + "/api/api/Antiforgery/token",
+                  headers={
+                      "Accept": "application/json, text/plain, */*",
+                      "Referer": base + "/inquiry/report",
+                  },
+                  timeout=60,
+                  opener=opener,
+              )
+              token_json = json.loads(token_text)
+              token = token_json.get("data") if isinstance(token_json, dict) else None
+              if not isinstance(token, str) or len(token) < 20:
+                  raise RuntimeError("Antiforgery token missing or malformed")
+
+              all_reports = []
+              attempts = []
+              for mt in (0, 1, 2):
+                  payload = {
+                      "marketType": mt,
+                      "industryNameList": [],
+                      "companyCodeList": [],
+                      "year": 2024,
+                      "industryName": "all",
+                      "companyCode": "",
+                  }
+                  body = json.dumps(payload).encode()
+                  headers = {
+                      "Content-Type": "application/json",
+                      "Accept": "application/json, text/plain, */*",
+                      "Origin": base,
+                      "Referer": base + "/inquiry/report",
+                      "RequestVerificationToken": token,
+                  }
+                  try:
+                      text, status, response_headers = fetch_text(
+                          base + "/api/api/MopsSustainReport/data",
+                          data=body,
+                          headers=headers,
+                          timeout=90,
+                          opener=opener,
+                      )
+                      result = json.loads(text)
+                      records = result.get("data", []) if isinstance(result, dict) else []
+                      if records is None:
+                          records = []
+                      all_reports.extend(records)
+                      item = {
+                          "marketType": mt,
+                          "http_status": status,
+                          "length": len(text),
+                          "contains_security_text": SECURITY_TEXT in text,
+                          "records": len(records),
+                          "api_success": result.get("success") if isinstance(result, dict) else None,
+                          "api_message": result.get("message") if isinstance(result, dict) else None,
+                      }
+                      attempts.append(item)
+                      print("ESG_ATTEMPT", json.dumps(item, ensure_ascii=False))
+                  except urllib.error.HTTPError as e:
+                      body_text = decode_bytes(e.read(), e.headers)
+                      item = {
+                          "marketType": mt,
+                          "http_status": e.code,
+                          "length": len(body_text),
+                          "contains_security_text": SECURITY_TEXT in body_text,
+                          "records": 0,
+                          "error": f"HTTPError {e.code} {e.reason}",
+                          "preview": body_text[:1000],
+                      }
+                      attempts.append(item)
+                      print("ESG_ATTEMPT", json.dumps(item, ensure_ascii=False))
+              if not all_reports:
+                  raise RuntimeError("All ESG market types returned 0 records")
+              p = OUT / "twse_esg_reports.json"
+              p.write_text(json.dumps(all_reports, ensure_ascii=False), encoding="utf-8")
+              fetch_results[p.name] = {
+                  "ok": True,
+                  "records": len(all_reports),
+                  "bytes": p.stat().st_size,
+                  "home_status": home_status,
+                  "token_status": token_status,
+                  "cookie_names": [cookie.name for cookie in jar],
+                  "attempts": attempts,
+              }
+          except Exception as e:
+              fetch_results["twse_esg_reports.json"] = {
+                  "ok": False,
+                  "error": f"{type(e).__name__}: {e}",
+                  "home_status": locals().get("home_status"),
+                  "token_status": locals().get("token_status"),
+                  "token_preview": locals().get("token_text", "")[:500],
+                  "attempts": locals().get("attempts", []),
+              }
+              traceback.print_exc()
+
+          metadata = {
+              "tested_at_utc": __import__("datetime").datetime.now(
+                  __import__("datetime").timezone.utc
+              ).isoformat(),
+              "network_type": "GitHub-hosted Actions runner / cloud data-center egress",
+              "runner": {
+                  "os": os.environ.get("RUNNER_OS"),
+                  "arch": os.environ.get("RUNNER_ARCH"),
+                  "environment": os.environ.get("RUNNER_ENVIRONMENT"),
+                  "image_os": os.environ.get("ImageOS"),
+                  "image_version": os.environ.get("ImageVersion"),
+              },
+              "probe_results": probe_results,
+              "fetch_results": fetch_results,
+          }
+          (OUT / "probe_result.json").write_text(
+              json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
+          )
+          print("FINAL_META", json.dumps(metadata, ensure_ascii=False))
+          print("FILES")
+          for p in sorted(OUT.iterdir()):
+              print(p.name, p.stat().st_size)
+          PY
+
+      - name: Upload probe result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twse-probe-results
+          path: twse-results/
+          if-no-files-found: error
+          retention-days: 1
