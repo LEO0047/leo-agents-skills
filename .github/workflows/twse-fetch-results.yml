@@ -1,0 +1,216 @@
+name: Export temporary TWSE probe files
+
+on:
+  push:
+    branches:
+      - "tmp/twse-probe-20260814"
+    paths:
+      - ".github/workflows/twse-fetch-results.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: tmp/twse-probe-20260814
+          fetch-depth: 0
+
+      - run: python3 -m pip install --disable-pip-version-check --quiet requests
+
+      - name: Fetch the three public datasets
+        run: |
+          mkdir -p out
+          cat > /tmp/fetch_twse.py <<'PY'
+          import html as htmlmod
+          import json
+          import os
+          import re
+          import socket
+          import urllib.error
+          import urllib.request
+          from pathlib import Path
+
+          import requests
+
+          OUT = Path("out")
+          OUT.mkdir(parents=True, exist_ok=True)
+          UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0 Safari/537.36"
+          SECURITY_TEXT = "安全性考量"
+          JSON_HEADERS = {"User-Agent": UA, "Content-Type": "application/json"}
+
+          def probe(name, url, body=None):
+              result = {"name": name, "url": url}
+              try:
+                  request = urllib.request.Request(url, data=body, headers=JSON_HEADERS)
+                  with urllib.request.urlopen(request, timeout=60) as response:
+                      text = response.read().decode("utf-8", "ignore")
+                      result.update(
+                          classification="被擋" if SECURITY_TEXT in text else "正常",
+                          http_status=response.status,
+                          length=len(text),
+                          contains_security_text=SECURITY_TEXT in text,
+                          content_type=response.headers.get("Content-Type", ""),
+                      )
+              except urllib.error.HTTPError as exc:
+                  text = exc.read().decode("utf-8", "ignore")
+                  result.update(
+                      classification="被擋" if SECURITY_TEXT in text or exc.code in (401, 403, 429) else "錯誤",
+                      http_status=exc.code,
+                      length=len(text),
+                      contains_security_text=SECURITY_TEXT in text,
+                      error=f"HTTPError {exc.code}: {exc.reason}",
+                  )
+              except Exception as exc:
+                  result.update(classification="錯誤", error=f"{type(exc).__name__}: {exc}")
+              print(json.dumps(result, ensure_ascii=False))
+              return result
+
+          probes = [
+              probe("上市基本資料", "https://openapi.twse.com.tw/v1/opendata/t187ap03_L"),
+              probe(
+                  "ESG報告書清單",
+                  "https://esggenplus.twse.com.tw/api/api/MopsSustainReport/data",
+                  json.dumps({"marketType": 0, "industryNameList": [], "companyCodeList": [], "year": 2024}).encode(),
+              ),
+          ]
+
+          fetch_results = {}
+
+          # 1. 上市公司基本資料
+          response = requests.get(
+              "https://openapi.twse.com.tw/v1/opendata/t187ap03_L",
+              headers={"User-Agent": UA, "Accept": "application/json"},
+              timeout=90,
+          )
+          response.raise_for_status()
+          if SECURITY_TEXT in response.text:
+              raise RuntimeError("listed endpoint returned security block page")
+          listed = response.json()
+          listed_path = OUT / "twse_listed.json"
+          listed_path.write_text(json.dumps(listed, ensure_ascii=False), encoding="utf-8")
+          fetch_results[listed_path.name] = {"records": len(listed), "bytes": listed_path.stat().st_size}
+
+          # 2. 員工人數：原 mops 網域會回安全頁，改用官方 mopsov 原版站。
+          def clean_cell(value):
+              value = re.sub(r"<[^>]+>", "", value)
+              return htmlmod.unescape(value).replace("\xa0", "").strip()
+
+          employees = {}
+          employee_markets = {}
+          for market in ("sii", "otc"):
+              payload = {
+                  "encodeURIComponent": "1",
+                  "step": "1",
+                  "firstin": "1",
+                  "off": "1",
+                  "TYPEK": market,
+                  "RYEAR": "114",
+              }
+              url = "https://mopsov.twse.com.tw/mops/web/ajax_t100sb14"
+              response = requests.post(
+                  url,
+                  data=payload,
+                  headers={
+                      "User-Agent": UA,
+                      "Content-Type": "application/x-www-form-urlencoded",
+                      "Origin": "https://mopsov.twse.com.tw",
+                      "Referer": "https://mopsov.twse.com.tw/mops/web/t100sb14",
+                  },
+                  timeout=90,
+              )
+              response.raise_for_status()
+              text = response.text
+              if SECURITY_TEXT in text:
+                  raise RuntimeError(f"mopsov {market} returned security block page")
+              count = 0
+              for row in re.findall(r"<tr[^>]*>(.*?)</tr>", text, re.S | re.I):
+                  cells = [clean_cell(cell) for cell in re.findall(r"<td[^>]*>(.*?)</td>", row, re.S | re.I)]
+                  if len(cells) >= 7 and re.fullmatch(r"\d{4}", cells[1] or ""):
+                      try:
+                          employees[cells[1]] = int(float(cells[6].replace(",", "")))
+                          count += 1
+                      except ValueError:
+                          pass
+              employee_markets[market] = count
+              print(f"{market}: {count} records")
+          employee_path = OUT / "twse_employees.json"
+          employee_path.write_text(json.dumps(employees, ensure_ascii=False), encoding="utf-8")
+          fetch_results[employee_path.name] = {
+              "records": len(employees),
+              "bytes": employee_path.stat().st_size,
+              "markets": employee_markets,
+              "source": "mopsov.twse.com.tw",
+          }
+
+          # 3. 2024 永續報告書清單，只抓清單，不下載 PDF。
+          reports = []
+          esg_markets = {}
+          session = requests.Session()
+          for market_type in (0, 1, 2):
+              payload = {"marketType": market_type, "industryNameList": [], "companyCodeList": [], "year": 2024}
+              response = session.post(
+                  "https://esggenplus.twse.com.tw/api/api/MopsSustainReport/data",
+                  json=payload,
+                  headers={
+                      "User-Agent": UA,
+                      "Content-Type": "application/json",
+                      "Accept": "application/json, text/plain, */*",
+                  },
+                  timeout=90,
+              )
+              response.raise_for_status()
+              if SECURITY_TEXT in response.text:
+                  raise RuntimeError(f"ESG marketType {market_type} returned security block page")
+              parsed = response.json()
+              data = parsed.get("data", [])
+              if not isinstance(data, list):
+                  raise RuntimeError(f"ESG marketType {market_type} data is not a list")
+              reports.extend(data)
+              esg_markets[str(market_type)] = len(data)
+              print(f"marketType {market_type}: {len(data)} records")
+          esg_path = OUT / "twse_esg_reports.json"
+          esg_path.write_text(json.dumps(reports, ensure_ascii=False), encoding="utf-8")
+          fetch_results[esg_path.name] = {
+              "records": len(reports),
+              "bytes": esg_path.stat().st_size,
+              "markets": esg_markets,
+          }
+
+          result = {
+              "network": {
+                  "type": "GitHub-hosted cloud runner",
+                  "runner_environment": os.getenv("RUNNER_ENVIRONMENT"),
+                  "runner_os": os.getenv("RUNNER_OS"),
+                  "runner_arch": os.getenv("RUNNER_ARCH"),
+                  "image_os": os.getenv("ImageOS"),
+                  "hostname": socket.gethostname(),
+              },
+              "probe_results": probes,
+              "fetch_results": fetch_results,
+          }
+          (OUT / "probe_result.json").write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+          print(json.dumps(result, ensure_ascii=False))
+          PY
+          python3 /tmp/fetch_twse.py
+
+      - name: Upload files
+        uses: actions/upload-artifact@v4
+        with:
+          name: twse-probe-results
+          path: out/
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Commit files to temporary branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add out/
+          git commit -m "chore: store temporary TWSE result files [skip ci]"
+          git push origin HEAD:tmp/twse-probe-20260814
