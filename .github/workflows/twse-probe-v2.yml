@@ -1,0 +1,246 @@
+name: One-off TWSE endpoint probe v2
+
+on:
+  push:
+    branches:
+      - tmp/twse-probe-20260814
+    paths:
+      - .github/workflows/twse-probe-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Install dependency
+        run: python3 -m pip install --disable-pip-version-check --quiet requests
+
+      - name: Run exact probe and fetch JSON
+        shell: bash
+        run: |
+          mkdir -p out
+          cat > /tmp/probe.py <<'PY'
+          import datetime
+          import html
+          import json
+          import os
+          import re
+          import socket
+          import traceback
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          import requests
+
+          OUT = Path('out')
+          OUT.mkdir(exist_ok=True)
+          UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0 Safari/537.36'
+          SECURITY = '安全性考量'
+          H = {'User-Agent': UA, 'Content-Type': 'application/json'}
+          listed_url = 'https://openapi.twse.com.tw/v1/opendata/t187ap03_L'
+          esg_url = 'https://esggenplus.twse.com.tw/api/api/MopsSustainReport/data'
+
+          def compact(text, n=320):
+              return re.sub(r'\s+', ' ', text[:n]).strip()
+
+          def probe(name, url, body=None):
+              out = {'name': name, 'method': 'POST' if body else 'GET', 'url': url}
+              try:
+                  req = urllib.request.Request(url, data=body, headers=H)
+                  with urllib.request.urlopen(req, timeout=25) as r:
+                      text = r.read().decode('utf-8', 'ignore')
+                      out.update(classification='被擋' if SECURITY in text else '正常',
+                                 http_status=getattr(r, 'status', None), length=len(text),
+                                 contains_security_text=SECURITY in text,
+                                 content_type=r.headers.get('Content-Type', ''),
+                                 preview=compact(text))
+              except urllib.error.HTTPError as e:
+                  text = e.read().decode('utf-8', 'ignore')
+                  out.update(classification='被擋' if SECURITY in text else '錯誤',
+                             http_status=e.code, length=len(text),
+                             contains_security_text=SECURITY in text,
+                             error=f'HTTPError {e.code}: {e.reason}', preview=compact(text))
+              except Exception as e:
+                  out.update(classification='錯誤', error=f'{type(e).__name__}: {e}')
+              print('PROBE', json.dumps(out, ensure_ascii=False), flush=True)
+              return out
+
+          esg_body = json.dumps({'marketType':0,'industryNameList':[],
+                                  'companyCodeList':[],'year':2024}).encode()
+          probes = [probe('上市基本資料', listed_url),
+                    probe('ESG報告書清單', esg_url, esg_body)]
+          fetched = {}
+
+          # 1. Listed company master
+          try:
+              r = requests.get(listed_url, headers={'User-Agent': UA}, timeout=35)
+              r.raise_for_status()
+              if SECURITY in r.text:
+                  raise RuntimeError('security block page')
+              data = r.json()
+              p = OUT/'twse_listed.json'
+              p.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+              fetched[p.name] = {'ok': True, 'records': len(data), 'bytes': p.stat().st_size,
+                                 'source_url': listed_url}
+          except Exception as e:
+              fetched['twse_listed.json'] = {'ok': False, 'error': f'{type(e).__name__}: {e}'}
+              traceback.print_exc()
+
+          # 2. Employee counts, ROC year 114
+          def clean(x):
+              return re.sub(r'\s+', ' ', html.unescape(re.sub(r'<[^>]+>', '', x)).replace('\xa0','')).strip()
+
+          def parse_emp(text):
+              emp = {}
+              for row in re.findall(r'<tr[^>]*>(.*?)</tr>', text, re.S|re.I):
+                  td = [clean(x) for x in re.findall(r'<td[^>]*>(.*?)</td>', row, re.S|re.I)]
+                  if len(td) >= 7 and re.fullmatch(r'\d{4}', td[1] or ''):
+                      try:
+                          emp[td[1]] = int(float(td[6].replace(',','')))
+                      except ValueError:
+                          pass
+              return emp
+
+          emp, emp_attempts = {}, []
+          for market in ('sii','otc'):
+              payload = {'encodeURIComponent':1,'step':1,'firstin':1,'off':1,
+                         'TYPEK':market,'RYEAR':'114'}
+              got = {}
+              for base in ('https://mops.twse.com.tw','https://mopsov.twse.com.tw'):
+                  url = base + '/mops/web/ajax_t100sb14'
+                  try:
+                      rr = requests.post(url, data=payload, headers={
+                          'User-Agent':UA,
+                          'Content-Type':'application/x-www-form-urlencoded',
+                          'Origin':base,
+                          'Referer':base+'/mops/web/t100sb14'}, timeout=35)
+                      parsed = parse_emp(rr.text)
+                      a = {'market':market,'url':url,'final_url':rr.url,
+                           'http_status':rr.status_code,'length':len(rr.text),
+                           'contains_security_text':SECURITY in rr.text,
+                           'records':len(parsed),'preview':compact(rr.text)}
+                      emp_attempts.append(a)
+                      print('EMP', json.dumps(a, ensure_ascii=False), flush=True)
+                      if parsed:
+                          got = parsed
+                          break
+                  except Exception as e:
+                      a = {'market':market,'url':url,'error':f'{type(e).__name__}: {e}'}
+                      emp_attempts.append(a)
+                      print('EMP', json.dumps(a, ensure_ascii=False), flush=True)
+              emp.update(got)
+          if emp:
+              p = OUT/'twse_employees.json'
+              p.write_text(json.dumps(emp, ensure_ascii=False), encoding='utf-8')
+              fetched[p.name] = {'ok':True,'records':len(emp),'bytes':p.stat().st_size,
+                                 'attempts':emp_attempts}
+          else:
+              fetched['twse_employees.json'] = {'ok':False,'error':'parsed zero records',
+                                                'attempts':emp_attempts}
+
+          # 3. ESG report list: bare POST first, then current antiforgery flow.
+          def esg_post(session, headers, mode):
+              rows, attempts = [], []
+              for mt in (0,1,2):
+                  payload = {'marketType':mt,'industryNameList':[],
+                             'companyCodeList':[],'year':2024}
+                  try:
+                      rr = session.post(esg_url, json=payload, headers=headers, timeout=35)
+                      a = {'mode':mode,'marketType':mt,'http_status':rr.status_code,
+                           'length':len(rr.text),'contains_security_text':SECURITY in rr.text,
+                           'preview':compact(rr.text)}
+                      try:
+                          obj = rr.json()
+                          d = obj.get('data',[]) if isinstance(obj,dict) else []
+                          a['records'] = len(d) if isinstance(d,list) else None
+                          if isinstance(d,list): rows.extend(d)
+                          a['success_field'] = obj.get('success') if isinstance(obj,dict) else None
+                          a['message'] = obj.get('message') if isinstance(obj,dict) else None
+                      except Exception as je:
+                          a['json_error'] = f'{type(je).__name__}: {je}'
+                      attempts.append(a)
+                      print('ESG', json.dumps(a, ensure_ascii=False), flush=True)
+                  except Exception as e:
+                      a = {'mode':mode,'marketType':mt,'error':f'{type(e).__name__}: {e}'}
+                      attempts.append(a)
+                      print('ESG', json.dumps(a, ensure_ascii=False), flush=True)
+              return rows, attempts
+
+          esg_attempts, reports, esg_mode, handshake = [], [], None, None
+          bare_session = requests.Session()
+          bare_headers = {'User-Agent':UA,'Content-Type':'application/json',
+                          'Accept':'application/json, text/plain, */*',
+                          'Origin':'https://esggenplus.twse.com.tw',
+                          'Referer':'https://esggenplus.twse.com.tw/inquiry/report'}
+          reports, attempts = esg_post(bare_session, bare_headers, 'bare')
+          esg_attempts.extend(attempts)
+          if reports:
+              esg_mode = 'bare'
+          else:
+              try:
+                  s = requests.Session()
+                  s.headers.update({'User-Agent':UA,'Accept-Language':'zh-TW,zh;q=0.9'})
+                  home = s.get('https://esggenplus.twse.com.tw/inquiry/report', timeout=25)
+                  tr = s.get('https://esggenplus.twse.com.tw/api/api/Antiforgery/token',
+                             headers={'Accept':'application/json, text/plain, */*',
+                                      'Referer':'https://esggenplus.twse.com.tw/inquiry/report'},
+                             timeout=25)
+                  token_obj = tr.json()
+                  token = token_obj.get('data') if isinstance(token_obj,dict) else None
+                  handshake = {'home_status':home.status_code,'home_length':len(home.text),
+                               'token_status':tr.status_code,'token_found':isinstance(token,str) and len(token)>20,
+                               'cookie_names':list(s.cookies.keys())}
+                  print('HANDSHAKE', json.dumps(handshake, ensure_ascii=False), flush=True)
+                  if handshake['token_found']:
+                      token_headers = dict(bare_headers)
+                      token_headers['RequestVerificationToken'] = token
+                      reports, attempts = esg_post(s, token_headers, 'antiforgery')
+                      esg_attempts.extend(attempts)
+                      if reports: esg_mode = 'antiforgery'
+              except Exception as e:
+                  handshake = {'error':f'{type(e).__name__}: {e}'}
+                  print('HANDSHAKE', json.dumps(handshake, ensure_ascii=False), flush=True)
+
+          if reports:
+              p = OUT/'twse_esg_reports.json'
+              p.write_text(json.dumps(reports, ensure_ascii=False), encoding='utf-8')
+              fetched[p.name] = {'ok':True,'records':len(reports),'bytes':p.stat().st_size,
+                                 'mode':esg_mode,'attempts':esg_attempts,'handshake':handshake}
+          else:
+              fetched['twse_esg_reports.json'] = {'ok':False,'error':'zero usable records',
+                                                  'attempts':esg_attempts,'handshake':handshake}
+
+          network = {'type':'雲端主機／CI（GitHub-hosted Ubuntu runner）',
+                     'GITHUB_ACTIONS':os.getenv('GITHUB_ACTIONS'),
+                     'RUNNER_ENVIRONMENT':os.getenv('RUNNER_ENVIRONMENT'),
+                     'RUNNER_OS':os.getenv('RUNNER_OS'),
+                     'RUNNER_ARCH':os.getenv('RUNNER_ARCH'),
+                     'ImageOS':os.getenv('ImageOS'),
+                     'hostname':socket.gethostname()}
+          try:
+              network['public_ip'] = requests.get('https://api.ipify.org?format=json',timeout=15).json().get('ip')
+          except Exception as e:
+              network['public_ip_error'] = f'{type(e).__name__}: {e}'
+
+          result = {'generated_at_utc':datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    'network':network,'probe_results':probes,'fetch_results':fetched}
+          (OUT/'probe_result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+          print('FINAL', json.dumps(result,ensure_ascii=False), flush=True)
+          PY
+          python3 /tmp/probe.py > out/probe_stdout.txt 2>&1 || true
+          cat out/probe_stdout.txt
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twse-probe-results-v2
+          path: out/
+          if-no-files-found: error
+          retention-days: 1
