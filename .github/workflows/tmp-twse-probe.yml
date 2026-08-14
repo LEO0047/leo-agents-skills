@@ -1,0 +1,49 @@
+name: Temporary TWSE endpoint probe
+
+on:
+  push:
+    branches:
+      - tmp/twse-probe-20260814
+    paths:
+      - tmp_twse_probe.py
+      - .github/workflows/tmp-twse-probe.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out temporary branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install HTTP dependencies
+        run: python -m pip install --disable-pip-version-check requests
+
+      - name: Run exact probes and fetch JSON metadata
+        run: python tmp_twse_probe.py
+
+      - name: Show generated files
+        if: always()
+        run: |
+          find twse_probe_output -maxdepth 1 -type f -printf '%f %s bytes\n' | sort || true
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: twse-probe-results
+          path: twse_probe_output/
+          if-no-files-found: error
+          retention-days: 1
