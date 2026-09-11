@@ -59,6 +59,7 @@ scripts/check-drift.sh
 | [frontend-design](skills/shared/frontend-design/) | Anthropic 設計原則 + 本機 frontend delivery quality gate |
 | [openai-frontend-design](skills/shared/openai-frontend-design/) | 以 OpenAI 原生生圖補強前端美術（Codex 原生工具 / Claude Code 走 wrapper 雙路由） |
 | [voice-notes](skills/shared/voice-notes/) | 本機多人錄音 → 時間對齊、說話者標記的逐字稿與字幕（全程不上傳音檔） |
+| [secure-secret-handoff](skills/shared/secure-secret-handoff/) | 透過一次性私密表單交接金鑰，模型不接觸秘密值 |
 
 ### claude
 | Skill | 一句話 |
@@ -76,6 +77,10 @@ scripts/check-drift.sh
 | [playwright](skills/codex/playwright/) | 終端機驅動真實瀏覽器做自動化 |
 | [raid-shadow-legends-ops](skills/codex/raid-shadow-legends-ops/) | 透過繁體中文 RAID UI 執行安全、具停損規則的日常與戰鬥操作 |
 | [windows-ui-automation](skills/codex/windows-ui-automation/) | 透過 PowerShell UI Automation 操作 Windows 桌面應用與控制項 |
+| [print-files](skills/codex/print-files/) | 驗證 PDF 與印表機設定後只送印一次，追蹤同一筆列印工作 |
+| [wait-what](skills/codex/wait-what/) | 找出上一段回覆的理解斷點，以結論與例子重新說明 |
+
+含公司人名、內部流程或專案素材的本機自訂版本，另存於私人 `LEO0047/LUCY` 的 `Lucy Harness/custom-skills/`。本庫的 `voice-notes` 是公開版本；完整公司版與各平台差異保留在私人庫。
 
 ### commands
 | Command | 平台 |

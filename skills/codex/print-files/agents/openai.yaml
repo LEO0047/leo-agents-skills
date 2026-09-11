@@ -1,0 +1,4 @@
+interface:
+  display_name: "印表機"
+  short_description: "安全列印本機檔案，先驗證版面再追蹤印表機工作至完成"
+  default_prompt: "使用 $print-files 將這個檔案以 A4 彩色單面列印一份，並確認工作完成。"
