@@ -70,12 +70,27 @@
       "action": "update",
       "source": "local Codex installation",
       "public_copy": true
+    },
+    {
+      "local_skill": "voice-notes",
+      "repository_directory": "skills/shared/voice-notes",
+      "action": "update",
+      "source": "local macOS Claude Code installation; compared with Codex and shared installations",
+      "public_copy": true,
+      "files_added": [
+        "scripts/range_server.py",
+        "scripts/reclamp.py"
+      ],
+      "adaptations": [
+        "remove internal examples and roster",
+        "loopback-only preview and strict single-range parsing",
+        "generic optional voiceprint profile location"
+      ]
     }
   ],
   "source_installations_modified": false,
   "private_data_included": false,
   "unchanged_existing_skills": [
-    "frontend-design",
-    "voice-notes"
+    "frontend-design"
   ]
 }

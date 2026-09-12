@@ -31,15 +31,8 @@ python3 ~/.claude/skills/voice-notes/scripts/transcribe.py \
 {"Speaker A": "Alice", "Speaker B": "Bob"}
 ```
 
-6. Use `--asr-context "詞1、詞2、…"` to bias recognition toward domain vocabulary — proper nouns and fixed terms only, separated by 、. Never put descriptive sentences in it: they can pull the model toward hallucinating them. In the 2026-08-01 comparison this eliminated every known jargon error (點點餐→點點禪 etc.). The 點點禪 capsule keeps its list at `點點禪膠囊/tools/asr_hotwords.txt`; pass it for anything recorded by that team.
-7. 點點禪 team recordings: the full roster is exactly three people — **孫佑侖**(Slack: Hide;「孫」「佑倫」「孫哥」「Sunny」都是他)、**蘇延仁**(Slack: Osmend;「延仁」)、**Leo**. Speaker naming is automated: after transcribing, run the voiceprint gate with the transcriber venv's python —
+6. Use `--asr-context "詞1、詞2、…"` to bias recognition toward domain vocabulary — proper nouns and fixed terms only, separated by 、. Never put descriptive sentences in it: they can pull the model toward hallucinating them. Supply your own vocabulary; no team roster or voiceprint profiles are included.
 
-   ```bash
-   ~/Library/Caches/local-speaker-transcriber/venv/bin/python \
-     ~/.claude/skills/voice-notes/scripts/speaker_id.py identify --session "<場次資料夾>" --apply
-   ```
-
-   It matches each diarized cluster against the three enrolled voiceprints(CAM++ zh-en, profiles at `點點禪膠囊/tools/voiceprints/profiles.json`;2026-08-01 全場次盲測通過)and rewrites labels only above confidence threshold — low confidence stays UNKNOWN, suspected non-members get flagged in the JSON `speaker_id` block, originals backed up to `_asr_original/`. The mic-recorder ingest runs this automatically. New team voices: enroll with `speaker_id.py enroll --session DIR --map "Speaker A=名字"`. Authority for names/jargon: `點點禪膠囊/GLOSSARY.md`.
 7. The first run builds the runtime and downloads models, so it can take a long time. Run it with `run_in_background: true` and check the output rather than letting a foreground call time out.
 8. Inspect the generated TXT, SRT, VTT, and JSON. Report warnings from the pipeline, especially `UNKNOWN` assignments or a detected speaker count different from the requested count.
 9. Render the note as a designed HTML page in the same folder — see "Render the note as HTML" below.
@@ -93,13 +86,22 @@ Hard requirements, independent of the design direction:
 - The full speaker-labeled transcript with timestamps — read the JSON for structured segments rather than scraping the TXT.
 - Surface the note's metadata where the design wants it: recording date, duration, detected speakers.
 - Readable in both light and dark via `prefers-color-scheme`.
-- When the page seeks the audio (tap a timestamp to play from there), queue the seek until the target time is inside `audio.seekable` — an early `currentTime` set silently resets to 0 on cold loads and on servers without Range support — and use `preload="auto"`; these recordings are small.
+- When the page seeks the audio (tap a timestamp to play from there), queue the seek until the target time is inside `audio.seekable` — an early `currentTime` set silently resets to 0 on cold loads and on servers without Range support — and use `preload="auto"`; bound the wait to a few seconds, then allow ordinary playback if seeking remains unavailable.
+
+For local playback checks, run the bundled [Range server](scripts/range_server.py):
+
+```bash
+python3 ~/.claude/skills/voice-notes/scripts/range_server.py 8124 "/absolute/path/to/notes"
+```
+
+Open `http://127.0.0.1:8124/` and actually test a timestamp jump. Use an existing project preview server when it already supports byte ranges. HTTP success alone does not verify playback or page rendering. This public server binds to loopback only.
 
 `rename_note.py` renames the HTML together with everything else and repairs the audio filename inside it, so building the page before a later rename is safe.
 
 ## Runtime behavior
 
-- Keep the Python environment, model snapshots, SpeakerKit source, and compiled CLI under `~/Library/Caches/local-speaker-transcriber/`.
+- Keep the Python environment, ASR/aligner snapshots, SpeakerKit source, and compiled CLI under `~/Library/Caches/local-speaker-transcriber/`. SpeakerKit CoreML downloads go under `~/Library/Application Support/local-speaker-transcriber/huggingface/` to avoid iCloud eviction and memory-mapping failures.
+- Transcription limits aligned words to two seconds, flags the clamp, filters short repetitive ASR loops, and retries diarization once. These heuristics do not establish timestamp accuracy; inspect flagged output against the audio.
 - Convert source audio to a temporary 16 kHz mono WAV with macOS `afconvert`.
 - Run Qwen3-ASR, unload it, run Qwen3-ForcedAligner, then run SpeakerKit. Never upload audio.
 - Delete temporary audio and intermediate files after either success or failure.
@@ -115,6 +117,19 @@ python3 ~/.claude/skills/voice-notes/scripts/test_fusion.py
 ```
 
 Read [references/output-schema.md](references/output-schema.md) when consuming the JSON programmatically or debugging speaker assignment.
+
+## Repair existing subtitle spans
+
+[reclamp.py](scripts/reclamp.py) rebuilds subtitles from stored word timings without model inference. Use a session folder containing transcript JSON, with unrelated JSON moved elsewhere first.
+
+```bash
+python3 ~/.claude/skills/voice-notes/scripts/reclamp.py --session "/absolute/path/to/session" --report
+python3 ~/.claude/skills/voice-notes/scripts/reclamp.py --session "/absolute/path/to/session"
+```
+
+The first command is read-only; the second creates `_reclamped/` for inspection. Only use `--in-place` when replacing the transcript is authorized: it backs up the originals to `_before_reclamp/` and removes old speaker-identification metadata. A two-second cap prevents long frozen subtitles; it does not recover the true word end. Recheck names against audio before applying any identity mapping.
+
+The optional legacy `speaker_id.py` needs your own enrolled profiles in `~/Library/Application Support/local-speaker-transcriber/voiceprints/profiles.json`. It is not part of the default workflow and its thresholds have not been validated for your microphones or speakers. Unknown speakers retain generic labels; transcript content must not be used to identify them.
 
 ## Keeping the two copies in sync
 

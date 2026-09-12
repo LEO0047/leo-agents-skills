@@ -53,9 +53,25 @@ ALIGN_CHUNK_SECONDS = 120.0
 # as untrustworthy rather than shipping it silently.
 MIN_TIMELINE_COVERAGE = 0.5
 
+# Even inside those budgets the aligner sometimes stretches a single word across a
+# whole silence: measured spans of 88 s for「我」and 123 s for「描」, against a
+# 0.16 s median and 1.36 s p99. Left alone one such word becomes a segment that
+# holds a subtitle on screen for a minute and a half, inflates the speaker's
+# talk-time, and — because voiceprint sampling is longest-first — eats the entire
+# per-speaker embedding budget with room noise. The onset is usually real and the
+# end is what ran away (it butts against the next word), so clamp the span and
+# flag it rather than guessing where inside the silence the word belongs.
+MAX_WORD_SECONDS = 2.0
+
 
 ICLOUD_DRIVE = Path.home() / "Library/Mobile Documents/com~apple~CloudDocs"
 NOTES_LIBRARY = ICLOUD_DRIVE / "Coding/Experiments/Claude/錄音"
+
+# Keep CoreML models outside iCloud-managed folders: evicted files cannot be
+# memory-mapped. Application Support avoids the synced Documents default.
+SPEAKERKIT_MODEL_CACHE = (
+    Path.home() / "Library/Application Support/local-speaker-transcriber/huggingface"
+)
 
 
 def notes_library() -> Path:
@@ -247,6 +263,32 @@ def strip_prompt_echo(text: str, tokens: list[str]) -> str:
     return "".join(kept).strip()
 
 
+# ---------------------------------------------------------------------------
+# Degenerate-loop removal.
+#
+# On low-speech chunks the decoder can collapse into repeating one short unit
+# forever ("嗯。嗯。嗯。…" / "啊。啊。啊。…"), hundreds of copies sharing one
+# collapsed timestamp. This is a different failure from prompt echo — the loop
+# contains no vocabulary terms, so hotword coverage never catches it
+# A unit of
+# 1–3 characters repeated ≥6 times in a row is not speech: real stutters and
+# agreement runs ("對對對對對") stay under six, and only the looped run itself
+# is dropped, so surrounding real speech in the same chunk survives.
+DEGENERATE_RUN_RE = re.compile(r"(.{1,3}?)\1{5,}")
+
+
+def strip_degenerate_runs(text: str) -> tuple[str, int]:
+    """剔除退化重複迴圈,回傳(清理後文字, 刪除字元數)。"""
+    removed = 0
+
+    def drop(match: re.Match[str]) -> str:
+        nonlocal removed
+        removed += len(match.group(0))
+        return ""
+
+    return DEGENERATE_RUN_RE.sub(drop, text).strip(), removed
+
+
 def load_display_map(path: Path | None) -> dict[str, str]:
     if path is None:
         return {}
@@ -344,6 +386,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, str]:
             asr_kwargs["system_prompt"] = f"本錄音可能包含以下詞彙:{sanitized_context}"
             echo_tokens = build_echo_tokens(sanitized_context)
         chunk_texts: list[str] = []
+        degenerate_removed = 0
         detected_language = language_hint or "Chinese"
         for index, (chunk_audio, offset) in enumerate(chunks, start=1):
             print(
@@ -351,9 +394,16 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, str]:
                 flush=True,
             )
             asr_result = asr.generate(chunk_audio, **asr_kwargs)
-            chunk_texts.append(
-                strip_prompt_echo(str(asr_result.text).strip(), echo_tokens)
-            )
+            chunk_text = strip_prompt_echo(str(asr_result.text).strip(), echo_tokens)
+            chunk_text, removed = strip_degenerate_runs(chunk_text)
+            if removed:
+                degenerate_removed += removed
+                print(
+                    f"      chunk {index}: dropped {removed} chars of "
+                    "degenerate repetition",
+                    flush=True,
+                )
+            chunk_texts.append(chunk_text)
             if index == 1:
                 detected_language = normalize_language(
                     getattr(asr_result, "language", None),
@@ -361,10 +411,16 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, str]:
                 )
             del asr_result
         raw_transcript = smart_join(chunk_texts)
+        if degenerate_removed:
+            warnings.append(
+                f"Dropped {degenerate_removed} characters of degenerate "
+                "repetition loops from the ASR output."
+            )
         if not raw_transcript:
-            if echo_tokens:
+            if echo_tokens or degenerate_removed:
                 raise RuntimeError(
                     "No speech transcribed: ASR output was entirely prompt echo "
+                    "or degenerate repetition "
                     "(the recording likely contains no real speech)"
                 )
             raise RuntimeError("Qwen3-ASR returned an empty transcript")
@@ -379,6 +435,7 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, str]:
         )
         aligner = load(aligner_path)
         words: list[Word] = []
+        clamped_words = 0
         for index, ((chunk_audio, offset), chunk_text) in enumerate(
             zip(chunks, chunk_texts), start=1
         ):
@@ -393,8 +450,11 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, str]:
                 if not str(item.text).strip():
                     continue
                 start = min(chunk_end, offset + max(0.0, float(item.start_time)))
-                end = min(chunk_end, offset + float(item.end_time))
-                words.append(Word(text=str(item.text), start=start, end=max(start, end)))
+                end = max(start, min(chunk_end, offset + float(item.end_time)))
+                if end - start > MAX_WORD_SECONDS:
+                    end = start + MAX_WORD_SECONDS
+                    clamped_words += 1
+                words.append(Word(text=str(item.text), start=start, end=end))
             del aligned
         del aligner
         clear_mlx()
@@ -405,6 +465,12 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, str]:
             warnings.append(
                 f"Aligned words span only {coverage:.0%} of the {duration:.0f}s "
                 "recording; timestamps are unreliable."
+            )
+        if clamped_words:
+            warnings.append(
+                f"{clamped_words} aligned words spanned more than "
+                f"{MAX_WORD_SECONDS:.0f}s and were clamped; their text is real but "
+                "their placement inside the surrounding silence is not."
             )
         if not restore_transcript_formatting(words, raw_transcript):
             warnings.append("ASR punctuation could not be restored to aligned words.")
@@ -419,9 +485,10 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, str]:
             "--rttm-path",
             str(rttm_path),
         ]
+        diarize_command += ["--download-model-path", str(SPEAKERKIT_MODEL_CACHE)]
         if speaker_count is not None:
             diarize_command += ["--num-speakers", str(speaker_count)]
-        subprocess.run(diarize_command, check=True)
+        run_diarizer(diarize_command, rttm_path)
 
         print("[4/4] Fusing timelines and writing outputs", flush=True)
         intervals = parse_rttm(rttm_path)
@@ -451,6 +518,8 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, str]:
             "requested_speakers": speaker_count or "auto",
             # sanitized: raw argv can carry surrogateescape bytes that crash write
             "asr_context": sanitized_context,
+            "degenerate_chars_removed": degenerate_removed,
+            "clamped_word_spans": clamped_words,
             "models": {
                 "asr": {"repo": ASR_REPO, "revision": ASR_REVISION},
                 "aligner": {"repo": ALIGNER_REPO, "revision": ALIGNER_REVISION},
@@ -471,6 +540,49 @@ def run_pipeline(args: argparse.Namespace) -> dict[str, str]:
         return {kind: str(path) for kind, path in paths.items()}
     finally:
         shutil.rmtree(temp_root, ignore_errors=True)
+
+
+def run_diarizer(
+    command: list[str],
+    rttm_path: Path,
+    *,
+    runner=subprocess.run,
+    attempts: int = 2,
+    sleep_fn=None,
+) -> None:
+    """Run SpeakerKit with one bounded retry and preserve useful diagnostics.
+
+    argmax-cli diarize has shown transient exit 1 failures on otherwise valid
+    audio. Retrying only this boundary avoids repeating successful ASR and
+    alignment work. Permanent errors still stop after the bounded attempts.
+    """
+    import time as _time
+
+    sleep_fn = sleep_fn or _time.sleep
+    failures: list[str] = []
+    for attempt in range(1, attempts + 1):
+        result = runner(command, check=False, capture_output=True, text=True)
+        if result.returncode == 0:
+            if result.stdout:
+                print(result.stdout.rstrip(), flush=True)
+            if result.stderr:
+                print(result.stderr.rstrip(), file=sys.stderr, flush=True)
+            return
+
+        detail = (result.stderr or result.stdout or "no diagnostic output").strip()
+        failures.append(f"attempt {attempt}/{attempts}: exit {result.returncode}: {detail}")
+        if attempt < attempts:
+            print(
+                f"Diarizer failed transiently ({failures[-1]}); retrying in 2s",
+                file=sys.stderr,
+                flush=True,
+            )
+            sleep_fn(2)
+
+    raise RuntimeError(
+        f"Speaker diarization failed after {attempts} attempts for {rttm_path}: "
+        + " | ".join(failures)
+    )
 
 
 def main() -> int:

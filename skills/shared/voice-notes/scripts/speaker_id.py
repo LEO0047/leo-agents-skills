@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""聲紋註冊與命名閘門(點點禪膠囊・後置版)
+"""聲紋註冊與命名閘門（選用的舊版工具）
 
 在 voice-notes 轉錄完成後,把 diarization 的 Speaker A/B/C 對到真人姓名。
 模型:sherpa-onnx CAM++ 中英語者驗證(192 維),與轉錄共用 venv。
 
 用法(一律用 voice-notes venv 的 python 跑):
-  speaker_id.py enroll   --session <場次資料夾> --map "Speaker A=Leo,Speaker B=孫佑侖"
+  speaker_id.py enroll   --session <場次資料夾> --map "Speaker A=Alice,Speaker B=Bob"
   speaker_id.py identify --session <場次資料夾> [--apply]
   speaker_id.py profiles
 
@@ -36,9 +36,8 @@ import numpy as np
 import sherpa_onnx
 
 MODEL = Path.home() / "Library/Caches/local-speaker-transcriber/models/speaker-embedding/campplus_zh_en.onnx"
-PROFILES = Path.home() / ("Library/Mobile Documents/com~apple~CloudDocs/Coding/Experiments/Claude/"
-                          "點點禪膠囊/tools/voiceprints/profiles.json")
-HOTWORDS = PROFILES.parent.parent / "asr_hotwords.txt"  # 膠囊 tools/asr_hotwords.txt
+PROFILES = Path.home() / "Library/Application Support/local-speaker-transcriber/voiceprints/profiles.json"
+HOTWORDS = PROFILES.parent.parent / "asr_hotwords.txt"  # 使用者自行提供的詞彙表
 NAME_T = 0.45        # 命名門檻
 MARGIN = 0.06        # 與第二名的最小差距
 NONMEMBER_T = 0.25   # 低於此值 → 疑似非成員
