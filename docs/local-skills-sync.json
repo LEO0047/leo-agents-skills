@@ -1,0 +1,81 @@
+{
+  "date": "2026-09-13",
+  "skills": [
+    {
+      "local_skill": "Gemini-Video-Analysis",
+      "repository_directory": "skills/codex/gemini-video-analysis",
+      "action": "add",
+      "source": "local Codex installation",
+      "public_copy": true
+    },
+    {
+      "local_skill": "ai-course-html-series",
+      "repository_directory": "skills/codex/ai-course-html-series",
+      "action": "add",
+      "source": "local Codex installation",
+      "public_copy": true
+    },
+    {
+      "local_skill": "ai-course-search",
+      "repository_directory": "skills/codex/ai-course-search",
+      "action": "add",
+      "source": "local Codex installation",
+      "public_copy": true
+    },
+    {
+      "local_skill": "chatgpt-web",
+      "repository_directory": "skills/codex/chatgpt-web",
+      "action": "add",
+      "source": "local Codex installation",
+      "public_copy": true
+    },
+    {
+      "local_skill": "instagram-readonly",
+      "repository_directory": "skills/codex/instagram-readonly",
+      "action": "add",
+      "source": "local Codex installation",
+      "public_copy": true
+    },
+    {
+      "local_skill": "line-chat-advisor",
+      "repository_directory": "skills/codex/line-chat-advisor",
+      "action": "add",
+      "source": "local Codex installation",
+      "public_copy": true
+    },
+    {
+      "local_skill": "manage-taskboard",
+      "repository_directory": "skills/codex/manage-taskboard",
+      "action": "add",
+      "source": "local Codex installation",
+      "public_copy": true
+    },
+    {
+      "local_skill": "taiwan-esg-research",
+      "repository_directory": "skills/codex/taiwan-esg-research",
+      "action": "add",
+      "source": "local Codex installation",
+      "public_copy": true
+    },
+    {
+      "local_skill": "video-date-quality",
+      "repository_directory": "skills/codex/video-date-quality",
+      "action": "add",
+      "source": "local Codex installation",
+      "public_copy": true
+    },
+    {
+      "local_skill": "openai-frontend-design",
+      "repository_directory": "skills/shared/openai-frontend-design",
+      "action": "update",
+      "source": "local Codex installation",
+      "public_copy": true
+    }
+  ],
+  "source_installations_modified": false,
+  "private_data_included": false,
+  "unchanged_existing_skills": [
+    "frontend-design",
+    "voice-notes"
+  ]
+}

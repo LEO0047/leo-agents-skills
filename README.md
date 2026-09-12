@@ -69,6 +69,15 @@ scripts/check-drift.sh
 ### codex
 | Skill | 一句話 |
 |---|---|
+| [gemini-video-analysis](skills/codex/gemini-video-analysis/) | Gemini 原生讀片、長片切段、時間索引與可回查證據；依賴既有 AGY／V2 |
+| [ai-course-html-series](skills/codex/ai-course-html-series/) | 圈選、對話與手機互動式教學 HTML，含模板及產生器 |
+| [ai-course-search](skills/codex/ai-course-search/) | 在既有 V2／Qwen 本機研究庫查來源與 Leo 想法 |
+| [chatgpt-web](skills/codex/chatgpt-web/) | 依偏好選 ChatGPT 網頁對話模式及最強非 Pro 模型 |
+| [instagram-readonly](skills/codex/instagram-readonly/) | 保留未讀狀態的 Instagram 對話讀取與匯出；不含私人名單 |
+| [line-chat-advisor](skills/codex/line-chat-advisor/) | 透過 line-readonly MCP 刷新本機 LINE 紀錄與草擬回覆，不發送 |
+| [manage-taskboard](skills/codex/manage-taskboard/) | 透過 taskctl 管理任務、完整綁定與版本衝突 |
+| [taiwan-esg-research](skills/codex/taiwan-esg-research/) | 台灣 ESG 候選研究、證據檢查與 Notion 寫入預覽 |
+| [video-date-quality](skills/codex/video-date-quality/) | 依檔案建立日期整理影片，補畫質前綴與雜湊驗證 |
 | [chronicle](skills/codex/chronicle/) | 讓 agent 看到使用者螢幕近幾小時的滾動緩衝 |
 | [game-mod-management](skills/codex/game-mod-management/) | 遊戲 mod repo 與本機流程管理，特別是 BG3 存檔救援、manifest、load order 與驗證 |
 | [game-modops-agent](skills/codex/game-modops-agent/) | Game ModOps v3 Windows 控制塔，協調 Nexus、Vortex、Wabbajack、MO2、LOOT 與 BG3 工具 |
@@ -86,6 +95,10 @@ scripts/check-drift.sh
 | Command | 平台 |
 |---|---|
 | [/codex-handoff](commands/claude/codex-handoff.md) | claude |
+
+## 本機自訂技能同步
+
+2026-09-13 新增 9 個 Codex 技能，更新 1 個前端生圖技能。原始私人安裝保持不變；公開副本移除私人對話映射與固定使用者路徑，保留必要腳本／模板。依賴、命名差異和收錄範圍見 [同步說明](docs/LOCAL_SKILLS_SYNC.md)。
 
 ## 安裝（暫定，未自動化）
 

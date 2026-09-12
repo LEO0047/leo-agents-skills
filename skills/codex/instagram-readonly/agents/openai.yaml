@@ -1,0 +1,4 @@
+interface:
+  display_name: "Instagram Readonly"
+  short_description: "用 Codex 內建瀏覽器即時唯讀 Instagram 私訊"
+  default_prompt: "使用內建瀏覽器唯讀檢查 Instagram 私訊。"

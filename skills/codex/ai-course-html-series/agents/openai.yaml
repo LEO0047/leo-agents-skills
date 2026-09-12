@@ -1,0 +1,6 @@
+interface:
+  display_name: "AI 課程 HTML 系列"
+  short_description: "沿用 ChatGPT 功能介紹版型，製作同系列教材與互動手機示意"
+  default_prompt: "使用 $ai-course-html-series，以既有 ChatGPT 功能介紹的系列外觀製作或修改這份課程 HTML。"
+policy:
+  allow_implicit_invocation: true

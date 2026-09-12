@@ -26,3 +26,6 @@ jobs:
       - name: voice-notes tests
         run: |
           python3 -m pytest skills/shared/voice-notes/scripts/test_fusion.py -q
+
+      - name: Taiwan ESG offline validation tests
+        run: python3 skills/codex/taiwan-esg-research/scripts/self_test.py

@@ -2,23 +2,30 @@
 # Bridge to OpenAI native image generation via a non-interactive Codex subagent.
 #
 # Claude Code has no built-in image generation tool. The bundled Codex CLI does
-# (`image_gen__imagegen`) and reuses the existing ChatGPT login, so no API key is
-# needed. This script runs one Codex turn whose only job is to generate an image
-# and copy it to a path you choose.
+# (the built-in `image_gen` tool) and reuses the existing ChatGPT login, so no
+# API key is needed. This script runs one Codex turn whose only job is to
+# generate (or edit) one image and copy it to a path you choose.
 #
 # Usage:
 #   codex-generate-image.sh --out <path.png> --prompt-file <prompt.txt> [options]
 #   codex-generate-image.sh --out <path.png> --prompt "<text>"          [options]
 #
 # Options:
-#   --edit <path>     Local source image to edit instead of generating fresh.
-#                     Repeatable for multiple references.
-#   --model <id>      Codex model for the driving turn (not the image model).
-#   --timeout <sec>   Hard limit on the Codex turn. Default 600.
+#   --edit <path>     Local source image to edit. Attached to the turn (-i) so the
+#                     built-in tool can see it. Repeatable; order is preserved.
+#   --model <id>      Codex model for the driving turn (NOT the image model).
+#   --timeout <sec>   Hard limit on the Codex turn. Default 600. Enforced here;
+#                     no coreutils `timeout` required.
 #   --dry-run         Print the composed Codex invocation and exit.
 #
-# Refuses to overwrite an existing --out path: the skill requires new paths for
-# every derived asset.
+# Refuses to overwrite an existing --out path: every derived asset gets a new
+# path. The Codex original stays under ~/.codex/generated_images/.
+#
+# Output on success (stdout):
+#   SAVED= ORIGINAL= METADATA= ASSUMPTIONS=   the subagent's own report
+#   VERIFIED_ON_DISK=<path>                    checked by this script
+#   sips metadata (size, alpha, format)        checked by this script
+# Exit: 0 verified on disk | 1 usage or no file | 124 timed out
 
 set -euo pipefail
 
@@ -42,13 +49,22 @@ while [ $# -gt 0 ]; do
     --model)       MODEL="${2:-}"; shift 2 ;;
     --timeout)     TIMEOUT="${2:-}"; shift 2 ;;
     --dry-run)     DRY_RUN=1; shift ;;
-    -h|--help)     sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help)     sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *)             die "unknown argument: $1" ;;
   esac
 done
 
 [ -n "$OUT" ] || die "--out is required"
-[ -x "$CODEX_BIN" ] || die "Codex CLI not executable at $CODEX_BIN (override with CODEX_BIN)"
+if [ ! -x "$CODEX_BIN" ]; then
+  if command -v codex >/dev/null 2>&1; then
+    CODEX_BIN="$(command -v codex)"
+  else
+    die "Codex CLI not executable at $CODEX_BIN and no 'codex' on PATH (override with CODEX_BIN)"
+  fi
+fi
+case "$TIMEOUT" in
+  ''|*[!0-9]*) die "--timeout must be a positive integer (seconds)" ;;
+esac
 
 if [ -n "$PROMPT_FILE" ]; then
   [ -f "$PROMPT_FILE" ] || die "prompt file not found: $PROMPT_FILE"
@@ -66,8 +82,10 @@ case "$OUT_NAME" in
   *) die "--out must end in .png, .jpg, .jpeg, or .webp" ;;
 esac
 
-# Edit mode needs the source readable by the Codex sandbox.
-EXTRA_DIRS=()
+# Edit sources are attached to the turn with -i, which is how the built-in tool
+# sees an image: it edits images visible in the conversation, not arbitrary
+# filesystem paths. No extra writable directories are granted for this.
+ATTACH_ARGS=()
 EDIT_INSTRUCTION=""
 if [ ${#EDIT_PATHS[@]} -gt 0 ]; then
   EDIT_LIST=""
@@ -76,14 +94,13 @@ if [ ${#EDIT_PATHS[@]} -gt 0 ]; then
     abs="$(cd "$(dirname "$p")" && pwd)/$(basename "$p")"
     EDIT_LIST="${EDIT_LIST}
 - ${abs}"
-    EXTRA_DIRS+=(--add-dir "$(dirname "$abs")")
+    ATTACH_ARGS+=(-i "$abs")
   done
   EDIT_INSTRUCTION="
-This is an EDIT, not a fresh generation. First inspect each local source with
-your view_image tool, then pass exactly these local paths as
-referenced_image_paths (never mix local paths with conversation-image
-references):${EDIT_LIST}
-Preserve every stated invariant. Do not modify the source files."
+This is an EDIT, not a fresh generation. The image(s) attached to this message
+are the edit sources, in this order:${EDIT_LIST}
+Use the attached image(s) with your built-in image generation tool's edit flow.
+Preserve every stated invariant. The source files on disk stay untouched."
 fi
 
 # The turn is deliberately over-constrained: exec mode cannot answer questions,
@@ -101,11 +118,11 @@ ${PROMPT}
 Hard rules for this turn:
 - Never ask a question. If a detail is missing, choose the reading that best
   serves the prompt as written and state the assumption in one line.
-- Do not augment, editorialize, or "improve" the subject, palette, background,
-  or composition beyond what the prompt states.
-- Copy the generated file to ./${OUT_NAME}. Do not move or delete the original
-  under ~/.codex/generated_images — it must stay as the preserved source.
-- Do not touch, overwrite, or delete any other file in the working directory.
+- Use the prompt as written: same subject, palette, background, and composition.
+  No augmentation, editorializing, or "improvement".
+- Copy the generated file to ./${OUT_NAME}. Leave the original under
+  ~/.codex/generated_images in place as the preserved source.
+- Touch no other file in the working directory.
 - Do not install anything, run git, or reach the network beyond generation.
 
 Finally print exactly these four lines and nothing else after them:
@@ -117,34 +134,38 @@ EOF
 
 CMD=("$CODEX_BIN" exec -C "$OUT_DIR" -s workspace-write --skip-git-repo-check)
 [ -n "$MODEL" ] && CMD+=(-m "$MODEL")
-[ ${#EXTRA_DIRS[@]} -gt 0 ] && CMD+=("${EXTRA_DIRS[@]}")
+[ ${#ATTACH_ARGS[@]} -gt 0 ] && CMD+=("${ATTACH_ARGS[@]}")
+CMD+=(--)   # end of options: the prompt can never be parsed as an -i file
 
 if [ "$DRY_RUN" -eq 1 ]; then
-  printf 'would run: %s\n' "${CMD[*]}"
+  printf 'would run: %s <TASK>\n' "${CMD[*]}"
   printf -- '--- turn instructions ---\n%s\n' "$TASK"
   exit 0
 fi
 
-printf 'generating via Codex subagent -> %s/%s\n' "$OUT_DIR" "$OUT_NAME" >&2
+printf 'generating via Codex subagent -> %s/%s (timeout %ss)\n' "$OUT_DIR" "$OUT_NAME" "$TIMEOUT" >&2
 
 LOG="$(mktemp -t codex-imagegen)"
 trap 'rm -f "$LOG"' EXIT
 
-# macOS ships no `timeout`; use it only when coreutils provides one.
-TIMEOUT_BIN=""
-for c in timeout gtimeout; do
-  command -v "$c" >/dev/null 2>&1 && { TIMEOUT_BIN="$c"; break; }
-done
+# Portable watchdog: macOS ships no coreutils `timeout`.
+"${CMD[@]}" "$TASK" >"$LOG" 2>&1 &
+CODEX_PID=$!
+( sleep "$TIMEOUT"; kill -TERM "$CODEX_PID" 2>/dev/null ) 2>/dev/null &
+WATCHDOG_PID=$!
+CODEX_STATUS=0
+{ wait "$CODEX_PID" || CODEX_STATUS=$?; } 2>/dev/null
+{ pkill -P "$WATCHDOG_PID"; kill "$WATCHDOG_PID"; wait "$WATCHDOG_PID"; } >/dev/null 2>&1 || true
 
-if [ -n "$TIMEOUT_BIN" ]; then
-  "$TIMEOUT_BIN" "$TIMEOUT" "${CMD[@]}" "$TASK" >"$LOG" 2>&1 || true
-else
-  "${CMD[@]}" "$TASK" >"$LOG" 2>&1 || true
+if [ "$CODEX_STATUS" -eq 143 ] || [ "$CODEX_STATUS" -eq 124 ]; then
+  printf 'TIMEOUT: Codex turn exceeded %ss; no file accepted\n' "$TIMEOUT" >&2
+  tail -20 "$LOG" >&2
+  exit 124
 fi
 
 # Truth comes from the filesystem, never from the agent's own claim.
 if [ ! -f "$OUT_DIR/$OUT_NAME" ]; then
-  printf 'FAILED: no file at %s/%s\n' "$OUT_DIR" "$OUT_NAME" >&2
+  printf 'FAILED: no file at %s/%s (codex exit %s)\n' "$OUT_DIR" "$OUT_NAME" "$CODEX_STATUS" >&2
   printf -- '--- last 30 lines of Codex output ---\n' >&2
   tail -30 "$LOG" >&2
   exit 1
@@ -152,4 +173,4 @@ fi
 
 grep -E '^(SAVED|ORIGINAL|METADATA|ASSUMPTIONS)=' "$LOG" | tail -4 || true
 printf 'VERIFIED_ON_DISK=%s/%s\n' "$OUT_DIR" "$OUT_NAME"
-sips -g pixelWidth -g pixelHeight -g hasAlpha -g format "$OUT_DIR/$OUT_NAME" 2>/dev/null | tail -5
+sips -g pixelWidth -g pixelHeight -g hasAlpha -g format "$OUT_DIR/$OUT_NAME" 2>/dev/null | tail -4

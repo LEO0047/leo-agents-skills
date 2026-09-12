@@ -1,0 +1,4 @@
+interface:
+  display_name: "台灣 ESG 企業候選研究"
+  short_description: "查證上市櫃與興櫃 ESG 候選，審核後安全回填 Notion"
+  default_prompt: "Use $taiwan-esg-research to run an audit-ready Taiwan ESG candidate pilot, validate the evidence package, and prepare only explicitly authorized Notion writeback."

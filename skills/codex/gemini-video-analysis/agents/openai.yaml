@@ -1,0 +1,4 @@
+interface:
+  display_name: "Gemini-Video-Analysis"
+  short_description: "用 Gemini 3.8 Flash 分析影片並保存可回查筆記"
+  default_prompt: "使用 $gemini-video-analysis 分析這支影片，將時間索引、分析與原始筆記存到指定資料夾。"

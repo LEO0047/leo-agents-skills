@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChatGPT 使用入門</title><style>
+/* 系列共用視覺：兩份各自內嵌，沒有外部相依。 */
+:root{--paper:#fff;--ink:#202126;--soft:#626570;--line:#e0e2e8;--accent:#c52266;--tint:#fff0f6;--ground:#f6f7fa}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:var(--paper);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",sans-serif;line-height:1.7}
+header{max-width:1250px;margin:auto;border-bottom:1px solid var(--line);padding:16px 34px 14px}h1{font-size:24px;line-height:1.35;margin:0;font-weight:650}header p{margin:5px 0 0;color:var(--soft);font-size:14px}
+.layout{max-width:1250px;margin:auto;display:grid;grid-template-columns:240px minmax(0,1fr)}
+nav{position:sticky;top:0;align-self:start;height:calc(100dvh - 32px);top:16px;overflow-y:auto;padding:18px 12px 32px 24px;scrollbar-gutter:stable;border-right:1px solid var(--line);scrollbar-width:thin}
+nav details{margin:0}nav summary{white-space:nowrap;cursor:pointer;font-size:14px;font-weight:650;line-height:1.6;margin:0 0 12px;color:var(--ink)}
+nav .step-button{width:100%;text-align:left;background:transparent;border:0;display:flex;gap:9px;padding:9px 10px;margin:2px 0;border-left:2px solid transparent;border-radius:0 9px 9px 0;color:var(--soft);text-decoration:none;font-size:14px}nav .step-button[aria-current=step]{border-color:var(--accent);color:var(--accent);background:var(--tint);font-weight:600}.step-number{font-variant-numeric:tabular-nums;font-size:13px;min-width:12px}
+main{min-width:0;padding:23px 30px 40px}.mobile-nav{display:none;margin:0 0 18px}.mobile-nav label{display:block;font-size:13px;color:var(--soft);margin-bottom:6px}.mobile-nav select{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink)}
+button{font:inherit;cursor:pointer;background:var(--paper);border:1px solid var(--line);color:var(--ink);-webkit-tap-highlight-color:transparent}button:disabled{opacity:.35;cursor:default}
+.toolbar,.pager{display:flex;align-items:center;gap:10px}.toolbar{justify-content:space-between;color:var(--soft);font-size:13px}.pager{flex-shrink:0}.arrow{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;padding:0}.arrow svg{height:18px;width:18px}.backButton{font-size:13px;border-radius:8px;padding:8px 10px;min-height:40px}
+h2{font-size:30px;line-height:1.35;margin:18px 0;font-weight:650}#title:focus{outline:none}
+.gallery{display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--line);padding-bottom:16px;margin:0 0 24px}.gallery button{border-radius:999px;padding:7px 14px;font-size:14px;min-height:40px}.gallery button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.scene{display:grid;grid-template-columns:minmax(0,386px) minmax(0,460px);gap:32px;align-items:start;justify-content:center;max-width:1000px;margin:auto}figure{margin:0;min-width:0}.phone-stage{background:var(--ground);border-radius:24px;padding:28px;min-width:0}
+.iphone,.capture{width:100%;max-width:330px;margin:auto;aspect-ratio:384 / 821;height:auto;min-height:0;border:3px solid #161616;border-radius:14% / 6.58%;background:var(--paper);overflow:hidden;position:relative}
+.iphone{display:grid;grid-template-rows:42px 48px minmax(0,1fr) 62px}.statusbar{position:relative}.island{position:absolute;left:50%;top:10px;transform:translateX(-50%);background:#080808;width:31%;height:27px;border-radius:20px}.phone-tools{display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #f2f2f4}.phone-tools strong{font-size:17px}.icon{width:21px;height:21px;display:block;flex-shrink:0}
+.chat-viewport{position:relative;min-height:0;overflow:hidden}.chat-scroll{position:relative;height:100%;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#d1cbd0 transparent;min-height:0;padding:20px 16px 30px;scroll-behavior:auto}.chat-viewport::before{content:"";position:absolute;inset:0 0 auto;height:24px;background:linear-gradient(#fff,rgba(255,255,255,0));z-index:1;opacity:0;pointer-events:none;transition:opacity .15s}.chat-viewport.has-history::before{opacity:1}.history-hint{position:absolute;top:5px;left:50%;transform:translateX(-50%);font-size:12px;color:var(--soft);padding:3px 9px;background:rgba(255,255,255,.96);border-radius:20px;z-index:2;pointer-events:none;white-space:nowrap;opacity:0}.history-hint.is-visible{animation:history-hint 1s ease both}@keyframes history-hint{0%,75%{opacity:1}100%{opacity:0}}
+.message{font-size:15px;line-height:1.8;margin-bottom:24px;overflow-wrap:anywhere}.message.user{background:var(--tint);color:#8b2754;border-radius:20px 20px 5px 20px;padding:10px 14px;margin-left:24px}.message.user.current{box-shadow:inset 0 0 0 2px var(--accent)}.message.assistant p{margin:0 0 12px}.message.assistant ul{margin:8px 0 16px;padding-left:21px}
+.attachment-button{display:block;width:150px;max-width:100%;padding:0;border:0;background:transparent;border-radius:12px;margin:8px 0 12px auto;cursor:zoom-in}.attachment{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px}
+.composer{margin:8px 13px 14px;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:26px;padding:8px 12px;color:#96949a;font-size:14px;white-space:nowrap}.composer .plus{font-size:25px;line-height:1;color:#222}.voice{margin-left:auto;flex-shrink:0;border-radius:50%;background:#f36db1;color:white;width:30px;height:30px;display:grid;place-items:center}.voice svg{width:18px;height:18px}
+.capture img{position:absolute;width:104.166667%;max-width:none;left:-2.083333%;top:-4.628502%}.capture-time-mask{position:absolute;left:9.8%;top:1.2%;width:12.8%;height:3.9%;border-radius:2px;background:#fff;pointer-events:none}
+figcaption{margin:12px 0 0;font-size:13px;color:var(--soft)}.actual-input{font-size:14px;line-height:1.8;margin:16px 0 0;overflow-wrap:anywhere}.actual-input h3{font-size:14px;margin:0 0 8px;font-weight:600}.actual-input p{margin:0 0 12px;white-space:pre-wrap}
+.teaching-card{border-left:3px solid var(--accent);padding:14px 0 16px 20px;min-width:0;max-width:460px}.eyebrow{font-size:13px;color:var(--accent);font-weight:600;margin:0 0 20px}.teaching-section+.teaching-section{margin-top:28px}.teaching-section h3{font-size:20px;line-height:1.5;font-weight:600;margin:0 0 10px}.teaching-section p,.teaching-section blockquote{font-size:18px;line-height:1.8;margin:0;overflow-wrap:anywhere}.teaching-section blockquote{font-weight:550;color:var(--ink)}.material-details{margin-top:28px}.material-details summary{cursor:pointer;color:var(--accent);font-size:14px}.material-zoom{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;border-radius:12px}.material-image{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px;margin:12px 0}
+footer{max-width:1250px;margin:auto;padding:18px 34px;border-top:1px solid var(--line);color:var(--soft);font-size:13px;text-align:center}[hidden]{display:none!important}:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+@media(min-width:1200px){main{padding-left:42px;padding-right:42px}}
+@media(max-width:850px){header{padding:16px 22px 14px}footer{padding:16px 22px}.layout{grid-template-columns:1fr}nav{display:none}.mobile-nav{display:block}main{padding:16px 22px 30px}.scene{grid-template-columns:minmax(0,386px) minmax(0,460px)}}
+@media(max-width:620px){.scene{grid-template-columns:1fr;gap:24px}figure{width:100%;max-width:366px;margin:auto}.phone-stage{padding:18px}.teaching-card{max-width:none}.toolbar{gap:8px}.pager{gap:6px}.backButton{padding:8px;font-size:12px}.gallery{gap:7px}.gallery button{padding:7px 12px;font-size:13px}.phone-tools{padding:0 14px}}
+@media(max-width:480px){header{padding:14px 16px}main{padding:14px 14px 28px}footer{padding:16px}}
+@media(prefers-reduced-motion:reduce){.history-hint.is-visible{animation:none;opacity:1}.chat-viewport::before{transition:none}}
+@media print{nav,.mobile-nav,.toolbar,.gallery,.composer{display:none}.layout,.scene{display:block}main{padding:0}.phone-stage{padding:0;background:none}.iphone{display:block;aspect-ratio:auto;max-width:none;height:auto;overflow:visible;border:0;border-radius:0}.statusbar,.phone-tools,.history-hint{display:none}.chat-viewport,.chat-scroll{overflow:visible;height:auto}.message{break-inside:avoid}.teaching-card{margin-top:24px}}
+.image-viewer{position:fixed;inset:0;width:100%;height:100%;height:100dvh;max-width:none;max-height:none;margin:0;padding:64px 20px 24px;border:0;background:transparent;overflow:hidden;overscroll-behavior:contain}
+.image-viewer[open]{display:grid;place-items:center}
+.image-viewer::backdrop{background:rgba(20,18,23,.82);animation:viewer-backdrop-in 220ms ease-out}
+.image-viewer img{display:block;width:auto;height:auto;max-width:100%;max-height:100%;min-height:0;border-radius:12px;transform-origin:0 0;object-fit:contain;background:#fff}
+.viewer-close{position:absolute;right:max(16px,env(safe-area-inset-right));top:max(14px,env(safe-area-inset-top));height:40px;padding:0 16px;border-radius:24px;background:#fff;color:#202127;z-index:1}
+@keyframes viewer-backdrop-in{from{background:rgba(20,18,23,0)}to{background:rgba(20,18,23,.82)}}
+@media(prefers-reduced-motion:reduce){.image-viewer::backdrop{animation:none}}
+@media print{.image-viewer{display:none!important}}
+</style></head>
+<body><header><h1>ChatGPT 使用入門</h1><p id="subtitle"></p></header>
+<div class="layout"><nav id="nav" aria-label="對話步驟"><details open><summary>收到通知，把事情安排好</summary><div id="stepLinks"></div></details></nav><main>
+<div class="mobile-nav"><label for="stepSelect">想看哪個步驟？</label><select id="stepSelect"></select></div>
+<div class="toolbar"><span id="count"></span><div class="pager"><button id="back" class="backButton" disabled>← 返回剛才畫面</button><button id="prev" class="arrow" aria-label="上一步"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 5-7 7 7 7"/></svg></button><button id="next" class="arrow" aria-label="下一步"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 5 7 7-7 7"/></svg></button></div></div>
+<h2 id="title" tabindex="-1" aria-live="polite"></h2><div id="gallery" class="gallery" aria-label="切換簡化版對話與手機真實畫面"></div>
+<div class="scene"><figure><div class="phone-stage"><div id="phoneDemo" class="iphone">
+<div class="statusbar" aria-hidden="true"><span class="island"></span></div>
+<div class="phone-tools"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7h18M3 15h12"/></svg><div><strong>ChatGPT</strong></div><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m15 4 5 5-10 10-6 1 1-6Z"/></svg></div>
+<div id="chatViewport" class="chat-viewport"><div id="chatScroll" class="chat-scroll" tabindex="0" role="region" aria-label="可上下捲動的簡化版對話"></div><span id="historyHint" class="history-hint" aria-hidden="true">↑ 前面的對話</span></div>
+<div class="composer" aria-hidden="true"><span class="plus">＋</span><span>問問 ChatGPT</span><span class="voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 10v4m4-7v10m4-13v16m4-13v10m4-7v4"/></svg></span></div>
+</div><div id="capture" class="capture" hidden><img id="screen" alt="原始 iPhone 對話截圖"><span class="capture-time-mask" aria-hidden="true"></span></div></div><figcaption id="caption"></figcaption><section id="actualInput" class="actual-input" aria-label="實際輸入" hidden><h3>實際輸入</h3><div id="actualPrompts"></div></section></figure>
+<section class="teaching-card" aria-label="這一步的教學重點"><p id="lessonNumber" class="eyebrow"></p><div class="teaching-section"><h3>這一步在做什麼？</h3><p id="purpose"></p></div><div class="teaching-section"><h3>換你做</h3><blockquote id="prompt"></blockquote></div><div class="teaching-section"><h3>看回覆要注意什麼</h3><p id="watchFor"></p></div><details id="materialDetails" class="material-details"><summary>查看通知原圖</summary><button type="button" id="materialZoom" class="material-zoom" aria-label="放大通知原圖"><img id="materialImage" class="material-image" alt="活動通知"></button></details></section>
+</div></main></div><footer>iPhone 實拍 · 2026 年 9 月 11 日 · 對話為口語改寫示意</footer>
+<dialog id="imageViewer" class="image-viewer" aria-label="通知圖片預覽"><button type="button" id="closeImageViewer" class="viewer-close" autofocus>關閉 ×</button><img id="zoomImage" alt=""></dialog>
+<script id="guideData" type="application/json">__GUIDE_DATA__</script>
+<script>
+const data=JSON.parse(document.getElementById('guideData').textContent),$=id=>document.getElementById(id);let index=0,mode=0,depth=0,rendering=false;
+const viewer=$('imageViewer'),zoomImage=$('zoomImage');
+let zoomSource=null,zoomTrigger=null,openingImage=false,closingImage=false,previousOverflow='';
+function imageMotionDuration(){return window.matchMedia('(prefers-reduced-motion: reduce)').matches?0:240}
+function thumbnailTransform(){
+ const from=zoomSource?.isConnected?zoomSource.getBoundingClientRect():null;
+ const to=zoomImage.getBoundingClientRect();
+ // Measure the untransformed preview before deriving the thumbnail position.
+ if(!from||!from.width||!from.height||!to.width||!to.height)return 'scale(.94)';
+ return `translate(${from.left-to.left}px,${from.top-to.top}px) scale(${from.width/to.width},${from.height/to.height})`;
+}
+async function openImage(source,trigger){
+ if(viewer.open||openingImage)return;
+ openingImage=true;zoomSource=source;zoomTrigger=trigger;
+ zoomImage.src=source.currentSrc||source.src;zoomImage.alt=source.alt;
+ try{await zoomImage.decode()}catch{}
+ previousOverflow=document.documentElement.style.overflow;
+ document.documentElement.style.overflow='hidden';
+ viewer.showModal();openingImage=false;
+ const from=thumbnailTransform();
+ zoomImage.animate([{transform:from,opacity:.65},{transform:'none',opacity:1}],{duration:imageMotionDuration(),easing:'cubic-bezier(.2,.7,.2,1)'});
+}
+async function closeImage(){
+ if(!viewer.open||closingImage)return;
+ closingImage=true;
+ const current=getComputedStyle(zoomImage).transform;
+ zoomImage.getAnimations().forEach(animation=>animation.cancel());
+ const to=thumbnailTransform();
+ try{await zoomImage.animate([{transform:current,opacity:1},{transform:to,opacity:0}],{duration:imageMotionDuration(),easing:'cubic-bezier(.4,0,.6,1)',fill:'forwards'}).finished}catch{}
+ viewer.close();
+}
+viewer.addEventListener('cancel',event=>{event.preventDefault();closeImage()});
+viewer.addEventListener('click',event=>{if(event.target===viewer)closeImage()});
+viewer.addEventListener('close',()=>{
+ zoomImage.getAnimations().forEach(animation=>animation.cancel());
+ document.documentElement.style.overflow=previousOverflow;closingImage=false;
+ if(zoomTrigger?.isConnected)zoomTrigger.focus({preventScroll:true});
+});
+$('closeImageViewer').addEventListener('click',closeImage);
+$('materialZoom').addEventListener('click',()=>openImage($('materialImage'),$('materialZoom')));
+
+
+$('subtitle').textContent='會聊天，就會用；把想法交給 ChatGPT，讓它幫你做！';
+const historyKey='chatgpt-intro-guide-v2';let hintTimer=0;const hintedSteps=new Set();
+const stepGroup=document.createElement('optgroup');stepGroup.label='收到通知，把事情安排好';$('stepSelect').append(stepGroup);
+for(const [i,step]of data.steps.entries()){
+ const a=document.createElement('button');a.type='button';a.className='step-button';const num=document.createElement('span');num.className='step-number';num.textContent=i+1;const label=document.createElement('span');label.textContent=step.title;a.append(num,label);a.addEventListener('click',()=>go(i));$('stepLinks').append(a);
+ const option=document.createElement('option');option.value=step.id;option.textContent=`${i+1}　${step.title}`;stepGroup.append(option);
+}
+$('stepSelect').addEventListener('change',()=>go(data.steps.findIndex(s=>s.id===$('stepSelect').value)));
+function bubble(role,text){const el=document.createElement('div');el.className='message '+role;if(role==='user')el.textContent=text;else{let list=null;for(const line of text.split('\n')){if(line.startsWith('• ')){if(!list){list=document.createElement('ul');el.append(list)}const li=document.createElement('li');li.textContent=line.slice(2);list.append(li)}else{list=null;if(line.trim()){const p=document.createElement('p');p.textContent=line;el.append(p)}}}}return el}
+function updateScrollHint(){ $('chatViewport').classList.toggle('has-history',$('chatScroll').scrollTop>8) }
+function renderChat(){const chat=$('chatScroll');chat.replaceChildren();let target;
+ for(const [i,s]of data.steps.entries()){if(i>index)break;const anchor=document.createElement('div');anchor.dataset.step=s.id;chat.append(anchor);if(i===index)target=anchor;
+ if(s.asset_data){const img=document.createElement('img');img.className='attachment';img.width=150;img.height=121;img.src=s.asset_data;img.alt=s.id==='change'?'改期通知':'活動通知';const button=document.createElement('button');button.type='button';button.className='attachment-button';button.setAttribute('aria-label','放大'+img.alt);button.append(img);button.addEventListener('click',()=>openImage(img,button));anchor.append(button)}
+ const user=bubble('user',s.display_prompt);if(i===index){user.classList.add('current');user.setAttribute('aria-label','本步驟的說法：'+s.display_prompt)}anchor.append(user,bubble('assistant',s.demo_response));for(const f of s.demo_followups||[])anchor.append(bubble('user',f.prompt),bubble('assistant',f.response));
+ }return target;
+}
+function setMode(n,{save=true}={}){
+ const s=data.steps[index],max=(s.gallery_data||[]).length;mode=Math.max(0,Math.min(n,max));const demo=mode===0;$('phoneDemo').hidden=!demo;$('capture').hidden=demo;$('actualInput').hidden=demo;
+ for(const [i,b]of [...$('gallery').children].entries())b.setAttribute('aria-pressed',String(i===mode));
+ if(demo){$('caption').textContent='在手機裡上下捲動';updateScrollHint()}else{const shot=s.gallery_data[mode-1];$('screen').src=shot.data;$('screen').alt=s.title+'，手機真實畫面 '+mode;$('caption').textContent='手機真實畫面 '+mode;}
+ if(save)saveReadingState();
+}
+function saveReadingState(){if(rendering)return;history.replaceState({...(history.state||{}),guide:historyKey,step:data.steps[index].id,mode,depth,scrollY:window.scrollY,phoneScroll:$('chatScroll').scrollTop},'')}
+function render(saved=null,{focus=false}={}){
+ rendering=true;clearTimeout(hintTimer);$('historyHint').classList.remove('is-visible');const match=data.steps.findIndex(s=>s.id===location.hash.slice(1));index=match<0?0:match;const s=data.steps[index];const restored=saved?.guide===historyKey&&saved.step===s.id?saved:null;depth=restored?.depth??depth;
+ $('title').textContent=s.title;$('count').textContent=`第 ${index+1} 步 / ${data.steps.length}`;$('lessonNumber').textContent=`第 ${index+1} 步 · ${s.title}`;$('prev').disabled=index===0;$('next').disabled=index===data.steps.length-1;$('back').disabled=depth===0;$('purpose').textContent=s.purpose;$('prompt').textContent='「'+s.practice_prompt+'」';$('watchFor').textContent=s.watch_for;
+ $('materialDetails').hidden=!s.asset_data;$('materialDetails').open=false;if(s.asset_data){$('materialImage').src=s.asset_data;$('materialImage').alt=s.id==='change'?'改期通知':'活動通知'}else $('materialImage').removeAttribute('src');
+ $('actualPrompts').replaceChildren();for(const [i,text]of [s.actual_prompt,...(s.followups||[]).map(f=>f.prompt)].entries()){if(!text)continue;const p=document.createElement('p');p.textContent=(i?'接著輸入：':'')+text;$('actualPrompts').append(p)}
+ $('gallery').replaceChildren();['簡化版對話',...(s.gallery_data||[]).map((_,i)=>'手機真實畫面 '+(i+1))].forEach((label,i)=>{const b=document.createElement('button');b.textContent=label;b.onclick=()=>setMode(i);$('gallery').append(b)});
+ for(const [i,a]of [...$('stepLinks').children].entries()){if(i===index)a.setAttribute('aria-current','step');else a.removeAttribute('aria-current')}$('stepSelect').value=s.id;
+ const target=renderChat();setMode(restored?.mode??0,{save:false});
+ requestAnimationFrame(()=>{if(restored){$('chatScroll').scrollTop=restored.phoneScroll||0;window.scrollTo(0,restored.scrollY||0)}else{$('chatScroll').scrollTop=Math.max(0,(target?.offsetTop||0)-12)}updateScrollHint();
+ if(index>0&&mode===0&&!hintedSteps.has(s.id)&&$('chatScroll').scrollTop>8){hintedSteps.add(s.id);$('historyHint').classList.add('is-visible');hintTimer=setTimeout(()=>$('historyHint').classList.remove('is-visible'),1000)}
+ if(focus)$('title').focus({preventScroll:true});rendering=false;saveReadingState();
+ });
+}
+function go(n){if(n<0||n>=data.steps.length||n===index)return;saveReadingState();depth++;history.pushState({guide:historyKey,step:data.steps[n].id,mode:0,depth},'','#'+data.steps[n].id);render(null,{focus:true})}
+$('prev').onclick=()=>go(index-1);$('next').onclick=()=>go(index+1);$('back').onclick=()=>{if(depth>0){saveReadingState();history.back()}};
+$('chatScroll').addEventListener('scroll',()=>{updateScrollHint();saveReadingState()},{passive:true});window.addEventListener('scroll',saveReadingState,{passive:true});window.addEventListener('pagehide',saveReadingState);
+window.addEventListener('popstate',event=>render(event.state,{focus:true}));window.addEventListener('hashchange',()=>{if(data.steps[index].id!==location.hash.slice(1))render(history.state)});render(history.state);
+</script></body></html>

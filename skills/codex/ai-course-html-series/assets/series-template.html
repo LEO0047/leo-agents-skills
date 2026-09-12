@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>ChatGPT 功能介紹</title>
+<style>
+:root{--paper:#fff;--ground:#f6f7fa;--ink:#202126;--soft:#626570;--line:#e0e2e8;--accent:#c52266;--tint:#fff0f6;--body:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",sans-serif;--heading:"PingFang TC","Heiti TC",sans-serif}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);line-height:1.6}button,select{font:inherit}button{cursor:pointer}button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #3168d5;outline-offset:4px}button:disabled{cursor:default;opacity:.38}header{max-width:1250px;margin:auto;padding:30px 34px 24px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:24px}h1{font-family:var(--heading);font-size:clamp(25px,3vw,36px);letter-spacing:-.035em;line-height:1.25;margin:0;font-weight:650}header p{margin:8px 0 0;color:var(--soft);font-size:16px}.mark{color:var(--accent);font-weight:600;white-space:nowrap;font-size:14px}.layout{max-width:1250px;margin:auto;display:grid;grid-template-columns:210px minmax(0,1fr)}.sidebar{padding:22px 16px 50px 30px;border-right:1px solid var(--line);max-height:calc(100vh - 125px);overflow:auto;position:sticky;top:0;scrollbar-width:thin}.sidebar details{margin-bottom:15px}.sidebar summary{font-weight:650;cursor:pointer;padding:6px 0;font-size:15px}.pageLink{display:block;border:0;background:none;border-radius:7px;padding:7px 10px;text-align:left;width:100%;font-size:14px;color:var(--soft);line-height:1.45}.pageLink:hover{background:var(--ground)}.pageLink[aria-current]{background:var(--tint);color:var(--accent);font-weight:600}.main{min-width:0;padding:23px 30px 40px}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:16px}.breadcrumb{font-size:13px;color:var(--soft)}.pager{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--soft)}.iconButton{width:38px;height:38px;border:1px solid var(--line);background:var(--paper);border-radius:50%;font-size:22px;line-height:1}.iconButton:hover:not(:disabled){background:var(--tint);color:var(--accent)}h2{font-family:var(--heading);font-size:26px;line-height:1.3;margin:0 0 8px;font-weight:600;letter-spacing:-.02em}.scene{position:relative;padding:18px 0 18px 12px;display:grid;grid-template-columns:minmax(190px,330px) minmax(200px,1fr);gap:46px;margin:22px 0 10px;align-items:start}.phone{position:relative;width:100%;isolation:isolate;overflow:hidden;border-radius:24px;background:#fff}.phone img{width:100%;height:auto;display:block}.screenFrame{position:absolute;inset:0;z-index:2;pointer-events:none;background-size:100% 100%;background-repeat:no-repeat}.mask{position:absolute;z-index:1;pointer-events:none}.callout{position:relative;z-index:4;padding:18px 0 18px 20px;border-left:3px solid var(--accent);max-width:370px;background:white}.callout small{display:block;color:var(--accent);font-weight:650;font-size:13px;margin-bottom:7px}.callout h3{font-family:var(--heading);font-size:25px;line-height:1.35;margin:0 0 12px;overflow-wrap:anywhere}.callout p{font-size:18px;line-height:1.8;margin:0;overflow-wrap:anywhere}.jump{display:inline-block;margin-top:18px;border:0;border-bottom:1px solid currentColor;background:none;color:var(--accent);padding:0 0 2px;font-size:15px}.jump[hidden]{display:none}#connectors{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3;overflow:visible}.caption{font-size:13px;line-height:1.6;color:var(--soft);margin:6px 0 16px;padding-left:2px}.caption:empty{display:none}.choose{border-top:1px solid var(--line);padding-top:17px;margin-top:19px}.chooseHeading{font-size:14px;color:var(--soft);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}.choices{display:flex;flex-wrap:wrap;gap:9px}.choice{border:1px solid var(--line);background:white;color:var(--ink);border-radius:24px;padding:9px 15px;font-size:15px;min-height:44px;text-align:left}.choice:hover{border-color:var(--accent)}.choice[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:white}.choice .n{font-size:12px;opacity:.8;margin-right:7px}.mobileSelect{display:none}.keyTip{font-size:12px;color:var(--soft)}footer{max-width:1250px;margin:auto;border-top:1px solid var(--line);padding:18px 34px;display:flex;justify-content:space-between;gap:12px;color:var(--soft);font-size:12px}footer a{color:inherit}noscript{display:block;padding:30px;color:#a21f45}
+@media(min-width:1200px){.scene{gap:65px}.callout{padding-left:24px}.main{padding-left:42px;padding-right:42px}}
+@media(max-width:850px){header{padding:23px 22px 18px}.mark{display:none}.layout{display:block}.sidebar{display:none}.main{padding:16px 22px 30px}.mobileSelect{display:block;margin-bottom:19px}.mobileSelect label{display:block;color:var(--soft);font-size:13px;margin-bottom:5px}.mobileSelect select{width:100%;background:white;border:1px solid var(--line);border-radius:9px;padding:11px 12px;color:var(--ink);font-size:16px}.scene{grid-template-columns:minmax(170px,45%) minmax(0,1fr);gap:28px;max-width:700px;margin:14px auto}.callout{padding:12px 0 12px 15px}.callout h3{font-size:22px}.callout p{font-size:16px;line-height:1.7}.phone{border-radius:18px}footer{padding:16px 22px;flex-wrap:wrap}}
+@media(max-width:480px){header{padding:22px 16px 15px}header p{font-size:14px}h1{font-size:26px}.main{padding:14px 14px 28px}.scene{grid-template-columns:minmax(0,53%) minmax(0,47%);gap:0;padding-right:0}.callout{padding:10px 0 10px 10px;margin-left:16px}.callout h3{font-size:18px;line-height:1.4;margin-bottom:8px}.callout p{font-size:14px;line-height:1.7}.callout small{font-size:11px}.jump{font-size:13px;margin-top:12px}.phone{border-radius:16px}.toolbar{margin-bottom:12px}h2{font-size:23px}.choice{font-size:14px;padding:8px 12px}.keyTip{display:none}.caption{font-size:12px}footer{padding:16px}.pager{gap:5px}.iconButton{width:34px;height:34px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+@media print{.sidebar,.mobileSelect,.pager,.choose,.keyTip{display:none}.layout{display:block}.main{padding:15px}.scene{grid-template-columns:300px 1fr}.callout{break-inside:avoid}header{padding:10px}footer{font-size:10px}}
+.backButton{border:1px solid var(--line);border-radius:8px;padding:8px 12px;background:white;color:var(--ink);margin:0 0 18px;font-size:14px}.backButton:disabled{opacity:.4}.sources{font-size:12px;line-height:1.5;color:var(--soft);margin-top:14px}.sources a{color:var(--soft);display:block;margin-top:5px;text-decoration:underline;text-underline-offset:3px}.sources:empty{display:none}#itemText{white-space:pre-line}@media print{.backButton{display:none}}
+
+/* Reading hierarchy and controls: keep choices next to the current screen title. */
+header{padding:16px 34px 14px}h1{font-size:24px}header p{font-size:14px}
+h2{font-size:30px;font-weight:650}.callout h3{font-size:20px;font-weight:600}
+.callout{max-width:460px}.toolbar{align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.pager{margin-left:auto;flex-wrap:wrap}.backButton{margin:0 8px 0 0;font-size:12px;padding:7px 9px}
+.iconButton{display:inline-flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.iconButton svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.choose{border-top:0;border-bottom:1px solid var(--line);padding:0 0 14px;margin:12px 0 6px}
+.chooseHeading{font-size:13px;margin-bottom:8px}.choice{font-size:14px;padding:7px 12px}
+.sidebar{padding-top:18px;max-height:calc(100vh - 105px)}.sidebar details{margin-bottom:12px}
+.sidebar summary{font-size:14px;line-height:1.5}.pageLink{margin-left:10px;width:calc(100% - 10px);padding:7px 10px;border-left:2px solid transparent;border-radius:0 6px 6px 0}
+.pageLink[aria-current]{border-left-color:var(--accent)}
+@media(max-width:850px){header{padding:16px 22px 14px}.mobileSelect{margin-bottom:14px}.callout h3{font-size:20px}h2{font-size:28px}}
+@media(max-width:480px){header{padding:14px 16px}h1{font-size:24px}h2{font-size:27px}.toolbar{align-items:flex-start}.pager{gap:5px}.backButton{margin-right:4px;font-size:11px;padding:6px}.scene{grid-template-columns:minmax(0,1fr);padding:0;gap:14px}.phone{max-width:360px;margin:auto}.callout{margin-left:0;margin-top:0!important;border-left:0;border-top:3px solid var(--accent);padding:14px 0 0;max-width:none;width:100%}.callout h3{font-size:21px}.callout p{font-size:16px}.callout small{font-size:12px}#leader,#dot{display:none!important}.choice{font-size:14px}.chooseHeading{display:block}.jump{font-size:15px}}
+@media print{.choose{display:none}.pager{display:none}}
+
+/* Direct interaction uses the existing screenshot coordinates. */
+.phone{touch-action:pan-y}.screenFrame{z-index:10}.hotspots{position:absolute;inset:0;z-index:12;pointer-events:none}
+.hotspot{position:absolute;border:0;border-radius:12px;background:transparent;padding:0;pointer-events:auto;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.demoSwitch,.demoRadio{position:absolute;display:block;pointer-events:none;background:#c7c9ce;border-radius:999px}.demoSwitch>span{position:absolute;top:8%;left:4%;height:84%;aspect-ratio:1;border-radius:50%;background:white;box-shadow:0 1px 2px #0002;transition:left 180ms ease}.demoSwitch[data-on=true]{background:#34c759}.demoSwitch[data-on=true]>span{left:58%}.demoRadio{border:1px solid #bcc0c5;background:#fff}.demoRadio[data-on=true]{background:#24262b;border-color:#24262b}.demoRadio[data-on=true]>span{position:absolute;left:29%;top:18%;width:32%;height:52%;border:solid white;border-width:0 1.5px 1.5px 0;transform:rotate(45deg)}
+.practiceBar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:16px 0 0;font-size:13px;color:var(--soft)}
+.practiceTools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.practiceButton,.phonePager button{border:1px solid var(--line);border-radius:18px;padding:6px 11px;background:#fff;font-size:12px;color:var(--soft)}
+.practiceButton[aria-pressed=true]{color:var(--accent);background:var(--tint);border-color:var(--accent)}
+.phoneColumn{min-width:0}.phonePager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:0;min-height:0;flex-wrap:wrap}.phonePager:empty{display:none}
+.screenMotion{position:absolute;inset:0;z-index:11;pointer-events:none;overflow:hidden}.screenMotion img{width:100%;display:block}.screenMotion .mask{position:absolute}
+.actionTag{display:inline-block;font-size:12px;color:var(--accent);margin:0 0 8px}.actionTag:empty{display:none}
+@media(max-width:480px){.phoneColumn{width:100%;max-width:360px;margin:auto}.practiceBar{align-items:flex-start}.practiceTools{gap:5px}}
+@media(prefers-reduced-motion:reduce){.hotspot,.demoSwitch>span{transition:none}}
+@media print{.hotspots,.practiceBar,.phonePager,.actionTag{display:none!important}}
+
+/* Shared course series: keep this self-contained block aligned with topic B. */
+:root{--paper:#fff;--ground:#f6f7fa;--ink:#202126;--soft:#626570;--line:#e0e2e8;--accent:#c52266;--tint:#fff0f6}
+header,.layout,footer{max-width:1250px}header{padding:16px 34px 14px}h1{font-size:24px}h2{font-size:30px;font-weight:650}.callout h3{font-size:20px;font-weight:600}.callout p{font-size:18px;line-height:1.8}.sources,.caption,.breadcrumb,.chooseHeading,footer{font-size:13px}
+.iconButton{width:40px;height:40px}.iconButton svg{width:18px;height:18px}.backButton{font-size:13px;padding:8px 10px;min-height:40px;margin:0;border-radius:8px}.pager{gap:10px}.choice{font-size:14px;padding:7px 14px;min-height:40px;border-radius:999px}
+.layout{grid-template-columns:210px minmax(0,1fr)}.sidebar{height:calc(100dvh - 32px);max-height:none;align-self:start;position:sticky;top:16px;overflow-y:auto;scrollbar-gutter:stable}
+.scene{max-width:1000px;margin:24px auto 16px;padding:0;grid-template-columns:minmax(0,386px) minmax(0,460px);gap:32px;justify-content:center}
+.phoneColumn{min-width:0;width:100%;max-width:386px;margin:0 auto}.phoneStage{position:relative;background:var(--ground);border-radius:24px;padding:28px}
+.stageTools{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:0 0 16px;min-height:36px}.stageButton{width:36px;height:36px;display:inline-flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--line);border-radius:50%;background:var(--paper);color:var(--soft)}.stageButton svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.stageButton:hover,.stageButton[aria-pressed=true]{background:var(--tint);color:var(--accent);border-color:var(--accent)}
+.phoneViewport{position:relative;width:100%;max-width:330px;margin:auto;aspect-ratio:384 / 821;border-radius:14% / 6.58%;overflow:hidden;isolation:isolate;background:#fff}
+.phone{position:absolute;max-width:none;margin:0;border-radius:0;overflow:visible;touch-action:pan-y}.phone img{width:100%;height:auto;display:block}.screenFrame{position:absolute;inset:0;border:3px solid #000;border-radius:inherit;background:none;z-index:20;pointer-events:none}
+.phonePager{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:16px 0 0}.phonePager:empty{display:none}.stageHint{font-size:13px;color:var(--soft);margin:12px 4px 0;line-height:1.6;text-align:center}
+.actionTag{position:absolute;z-index:30;right:28px;top:72px;max-width:calc(100% - 56px);padding:7px 11px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-size:13px;line-height:1.4;box-shadow:0 4px 16px #20212612;pointer-events:none;opacity:0;transform:translateY(-4px);transition:opacity 180ms ease,transform 180ms ease}.actionTag.is-visible{opacity:1;transform:none}.actionTag:empty{display:none}
+.callout{max-width:460px;padding:18px 0 18px 20px;background:var(--paper)}.callout .interactionNote{font-size:13px;color:var(--soft);margin-top:12px}.interactionNote:empty{display:none}
+#screenTitle:focus{outline:none}
+@media(max-width:850px){.layout{display:block}.sidebar{display:none}header{padding:16px 22px 14px}.scene{max-width:1000px;gap:32px}.callout h3{font-size:20px}.callout p{font-size:18px}h2{font-size:30px}}
+@media(max-width:620px){.pager{gap:6px}.backButton{font-size:12px;padding:8px}.choice{font-size:13px;padding:7px 12px}.scene{grid-template-columns:minmax(0,1fr);gap:24px;padding:0}.phoneStage{padding:18px}.phoneColumn{max-width:366px}.callout{margin:0!important;border-left:3px solid var(--accent);border-top:0;padding:14px 0 14px 18px;width:100%;max-width:none}.callout h3{font-size:20px}.callout p{font-size:18px}.callout small{font-size:13px}.actionTag{right:18px;top:62px;max-width:calc(100% - 36px)}#leader,#dot{display:none!important}h2{font-size:30px}}
+@media(prefers-reduced-motion:reduce){.actionTag,.demoSwitch>span{transition:none}}
+.stageButtonLabel{width:auto;min-height:40px;height:auto;padding:8px 12px;gap:6px;border-radius:20px;font:inherit;font-size:14px;color:var(--ink);white-space:nowrap}.stageButtonLabel svg{flex-shrink:0}
+@media print{.stageTools,.stageHint,.phonePager,.actionTag{display:none!important}.phoneStage{background:transparent;padding:0}.scene{grid-template-columns:300px minmax(0,1fr)}}
+
+/* One selected ring; discovery outlines stay inside each unselected hit area. */
+.hotspot{outline:1px solid transparent;outline-offset:-2px}
+.hotspot:not([data-selected=true]):hover,.phone.show-targets .hotspot:not([data-selected=true]){outline-color:rgba(197,34,102,.55)}
+.hotspot:not([data-selected=true]):focus-visible{outline:2px solid #3168d5;outline-offset:-2px}
+.hotspot[data-selected=true],.hotspot[data-selected=true]:focus-visible{outline:none}
+.scene:has(.hotspot[data-selected=true]:focus-visible) #ring{stroke:#3168d5}
+
+/* Action feedback stays in the stage toolbar. */
+.actionTag{left:28px;right:116px;top:28px;max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:none}
+@media(max-width:620px){.actionTag{left:18px;right:106px;top:18px;max-width:none}}
+
+/* Keep phone navigation together, with room to wrap on narrow stages. */
+.stageTools{justify-content:flex-start;flex-wrap:wrap;margin-bottom:8px}
+.stageTools .backButton{margin:0;font-size:14px;min-height:40px;padding:8px 10px;border-radius:20px;white-space:nowrap}
+.stageTools .stageButton{flex-shrink:0}
+.stageTools #showTargets{margin-left:auto}
+.actionTag,.actionTag:empty{position:relative;display:block;top:auto;right:auto;max-width:100%;min-height:30px;margin:0 0 8px;padding:4px 8px;box-shadow:none;background:transparent;border-color:transparent}
+.navSection{font-size:12px;color:var(--soft);margin:14px 0 5px 10px;font-weight:600}
+</style></head><body>
+<header><div><h1>ChatGPT 功能介紹</h1><p>從零開始認識 ChatGPT</p></div></header>
+<div class="layout"><nav class="sidebar" id="sideNav" aria-label="畫面目錄"></nav><main class="main">
+<div class="mobileSelect"><label for="screenSelect">想看哪個畫面？</label><select id="screenSelect"></select></div>
+<div class="toolbar"><span class="breadcrumb" id="group"></span><div class="pager"><button class="iconButton" id="prev" aria-label="上一個畫面"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg></button><span id="count"></span><button class="iconButton" id="next" aria-label="下一個畫面"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></div></div>
+<h2 id="screenTitle" tabindex="-1"></h2>
+<div class="choose"><div class="chooseHeading"><span>選功能看說明，或直接點手機操作</span><span class="keyTip">Tab 選取 · Enter 切換</span></div><div class="choices" id="choices" aria-label="本頁按鈕"></div></div>
+<div class="scene" id="scene"><div class="phoneColumn"><div class="phoneStage" id="phoneStage"><div class="stageTools"><button id="back" class="backButton" disabled>← 返回剛才畫面</button><button id="restart" class="stageButton stageButtonLabel" aria-label="回到 ChatGPT 首頁畫面" title="回到 ChatGPT 首頁畫面"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7M5 9v11h14V9m-10 11v-7h6v7"/></svg><span>回到首頁</span></button><button id="showTargets" class="stageButton" aria-pressed="false" aria-label="顯示可點位置" title="顯示可點位置"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8V4h4m10 0h4v4M3 16v4h4m10 0h4v-4"/><circle cx="12" cy="12" r="3"/></svg></button></div><span id="actionTag" class="actionTag" role="status" aria-live="polite"></span><div class="phoneViewport" id="phoneViewport"><div class="phone" id="phone"><img id="screenImage" alt="" decoding="async"><div id="masks"></div><div class="hotspots" id="hotspots" aria-label="手機上的可操作功能"></div></div><div class="screenFrame" id="screenFrame" aria-hidden="true"></div></div><div id="phonePager" class="phonePager" aria-label="手機畫面上下段"></div></div><p class="stageHint">點手機上的按鈕，看看會發生什麼。</p></div><aside class="callout" id="callout" aria-live="polite" aria-atomic="true"><small id="itemNumber"></small><h3 id="itemTitle"></h3><p id="itemText"></p><p id="interactionNote" class="interactionNote"></p><button id="jump" class="jump" hidden>看展開後的畫面 →</button><div id="sources" class="sources"></div></aside><svg id="connectors" aria-hidden="true"><path id="leader" fill="none" stroke="#c52266" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path><rect id="ring" fill="none" stroke="#c52266" stroke-width="2.5"></rect><circle id="dot" r="3.5" fill="#c52266"></circle></svg></div>
+<p class="caption" id="note"></p>
+<noscript>請允許此 HTML 執行內嵌 JavaScript，才能切換畫面與圈選按鈕。</noscript>
+</main></div><footer><span>iPhone 實拍 · 2026 年 9 月 10–11 日 · 功能說明附來源；系統操作另標示</span></footer>
+<script id="guideData" type="application/json">__PAGES__</script>
+<script>
+'use strict';
+const pages=JSON.parse(document.getElementById('guideData').textContent);
+const $=id=>document.getElementById(id);let pageIndex=0,itemIndex=0,viewOverride=null;
+let navDepth=0;
+const stateKey='chatgpt-function-guide-v2';
+function resolveTarget(page,item=0){return Number(page)===27?{page:26,item:Number(item)===1?5:6}:{page:Number(page),item};}
+function activeScreen(){const p=pages[pageIndex],item=p.items[itemIndex],id=viewOverride??item.screen??p.id;return id===p.id?p:p.views[String(id)];}
+function boxOnScreen(page,item,screen){return (item.screen||page.id)===screen.id?item.box:item.interaction?.viewRects?.[String(screen.id)]||null;}
+function currentState(){return {guide:stateKey,page:pages[pageIndex].id,item:itemIndex,view:viewOverride,depth:navDepth,scroll:window.scrollY||0};}
+function saveState(){history.replaceState(currentState(),'',`#s${pages[pageIndex].id}-b${itemIndex+1}`);}
+function parseHash(){const m=location.hash.match(/^#s(\d+)(?:-b(\d+))?$/);return resolveTarget(m?Number(m[1]):pages[0].id,m?Math.max(0,Number(m[2]||1)-1):0);}
+function syncBack(){ $('back').disabled=navDepth===0; }
+const groups=[...new Set(pages.map(p=>p.group))];
+for(const group of groups){
+ const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=group;details.append(summary);
+ const optgroup=document.createElement('optgroup');optgroup.label=group;let section='';
+ for(const p of pages.filter(p=>p.group===group&&(p.navEntry??p.id)===p.id)){
+  if(p.navSection&&p.navSection!==section){const heading=document.createElement('div');heading.className='navSection';heading.textContent=p.navSection;details.append(heading);section=p.navSection;}
+  const b=document.createElement('button');b.type='button';b.className='pageLink';b.textContent=p.title;b.dataset.id=String(p.id);b.addEventListener('click',()=>showPage(p.id));details.append(b);
+  const opt=document.createElement('option');opt.value=String(p.id);opt.textContent=p.title;optgroup.append(opt);
+ }
+ $('sideNav').append(details);$('screenSelect').append(optgroup);
+}
+function showPage(id,updateHash=true,selected=0,view=null){clearMotion();const target=resolveTarget(id,selected);id=target.page;selected=target.item;if(updateHash){saveState();navDepth++;}let idx=pages.findIndex(p=>p.id===Number(id));if(idx<0)idx=0;pageIndex=idx;itemIndex=0;const p=pages[idx];$('screenTitle').textContent=p.title;$('group').textContent=p.group;$('count').textContent=`${idx+1} / ${pages.length}`;$('screenSelect').value=String(p.navEntry??p.id);$('prev').disabled=idx===0;$('next').disabled=idx===pages.length-1;$('screenImage').alt=`${p.title}：iPhone 實際畫面`;$('screenImage').src=p.image;$('note').textContent=p.note;
+ for(const link of document.querySelectorAll('.pageLink')){link.parentElement.open=pages.find(q=>q.id===Number(link.dataset.id)).group===p.group;if(Number(link.dataset.id)===(p.navEntry??p.id)){link.setAttribute('aria-current',Number(link.dataset.id)===p.id?'page':'location')}else link.removeAttribute('aria-current')}
+ $('choices').replaceChildren();p.items.forEach((item,i)=>{const b=document.createElement('button');b.className='choice';b.setAttribute('aria-pressed','false');b.addEventListener('click',()=>showItem(i));const n=document.createElement('span');n.className='n';n.textContent=String(i+1);b.append(n,document.createTextNode(item.label));$('choices').append(b)});
+ if(updateHash)history.pushState({guide:stateKey,page:p.id,item:0,depth:navDepth,scroll:0},'',`#s${p.id}`);showItem(Math.min(Math.max(0,selected),p.items.length-1),false,view);syncBack();if(updateHash){$('screenTitle').scrollIntoView({block:'start'});$('screenTitle').focus({preventScroll:true});saveState();}
+}
+function renderScreen(){const p=activeScreen();$('screenImage').src=p.image;$('screenImage').alt=`${pages[pageIndex].title}：iPhone 實際畫面`;
+ // Crop only the display viewport. The image, masks and all hit coordinates stay in source space.
+ const edge=8,top=38,bottom=p.height===872?9:8,cropWidth=p.width-edge*2,cropHeight=p.height-top-bottom;
+ $('phoneViewport').style.aspectRatio=`${cropWidth} / ${cropHeight}`;
+ Object.assign($('phone').style,{width:p.width/cropWidth*100+'%',left:-edge/cropWidth*100+'%',top:-top/cropHeight*100+'%'});
+ $('masks').replaceChildren();for(const [x,y,w,h,color] of displayMasks(p)){const el=document.createElement('span');el.className='mask';Object.assign(el.style,{left:x/p.width*100+'%',top:y/p.height*100+'%',width:w/p.width*100+'%',height:h/p.height*100+'%',background:color});$('masks').append(el)}
+ renderHotspots();
+}
+function showItem(i,remember=true,view=null){clearToast();const p=pages[pageIndex];itemIndex=i;const item=p.items[i];viewOverride=view!==null&&(Number(view)===p.id||p.views?.[String(view)])&&item.interaction?.viewRects?.[String(view)]?Number(view):null;renderScreen();$('itemNumber').textContent=`按鈕 ${i+1} / ${p.items.length}`;$('itemTitle').textContent=item.label;$('itemText').textContent=item.text;$('interactionNote').textContent=item.interaction_note||'';$('jump').hidden=!item.go;$('jump').textContent=item.jump_label||'看展開後的畫面 →';$('jump').onclick=item.go?()=>showPage(item.go):null;$('sources').replaceChildren();const refs=item.sources||[];if(item.basis!=='依 OpenAI 官方說明整理'||!refs.length){const basis=document.createElement('span');basis.textContent=item.basis||'實拍介面操作';$('sources').append(basis);}for(const [index,source] of refs.entries()){const a=document.createElement('a');a.href=source.url;a.target='_blank';a.rel='noopener noreferrer';a.textContent='OpenAI 官方說明'+(refs.length>1?' '+(index+1):'');a.title=source.title;a.setAttribute('aria-label','OpenAI 官方說明：'+source.title);$('sources').append(a)}if(remember)saveState();[...$('choices').children].forEach((b,n)=>b.setAttribute('aria-pressed',String(n===i)));requestAnimationFrame(()=>{draw();animateElement($('ring'),[{strokeOpacity:.45},{strokeOpacity:1},{strokeOpacity:.8}],{duration:1200,easing:'ease-in-out',iterations:1});})}
+// Use the shortest clear direct/right-angle connector across blank UI space.
+// Its endpoint slides along the callout border, avoiding an extra step at the end.
+function routeLeader(box, obstacles, photo, end, clearance=3) {
+ const [x,y,w,h]=box, cx=x+w/2, cy=y+h/2;
+ const [endX,minY,maxY]=end, gap=Math.max(3,clearance*2);
+ const hits=(a,b,r)=>{
+  const [rx,ry,rw,rh]=r;
+  if(Math.abs(a[0]-b[0])<.001)return a[0]>rx-clearance&&a[0]<rx+rw+clearance&&Math.max(a[1],b[1])>ry-clearance&&Math.min(a[1],b[1])<ry+rh+clearance;
+  return a[1]>ry-clearance&&a[1]<ry+rh+clearance&&Math.max(a[0],b[0])>rx-clearance&&Math.min(a[0],b[0])<rx+rw+clearance;
+ };
+ const candidates=[];
+ function add(side,points){
+  const finish=points[points.length-1];
+  if(finish[1]<minY||finish[1]>maxY){
+   // The card stays at the top; turn only in the clear gap outside the phone.
+   const gutter=photo.x+photo.w+(endX-photo.x-photo.w)/2;
+   if(gutter<=photo.x+photo.w||gutter>=endX)return;
+   const targetY=Math.max(minY,Math.min(maxY,finish[1]));
+   points=[...points.slice(0,-1),[gutter,finish[1]],[gutter,targetY],[endX,targetY]];
+  }
+  if(points.slice(1).some((p,i)=>obstacles.some(r=>hits(points[i],p,r))))return;
+  const score=points.slice(1).reduce((sum,p,i)=>sum+Math.abs(p[0]-points[i][0])+Math.abs(p[1]-points[i][1]),0);
+  candidates.push({side,points,score});
+ }
+ add('right',[[x+w,cy],[endX,cy]]);
+ // Prefer a lower exit when upper/lower routes are equally short.
+ add('bottom',[[cx,y+h],[cx,y+h+gap],[endX,y+h+gap]]);
+ add('top',[[cx,y],[cx,y-gap],[endX,y-gap]]);
+ // If an adjacent symbol is taller, clear its edge with the same single elbow.
+ for(const [ox,oy,ow,oh] of obstacles){
+  if(ox+ow<=cx||ox>=endX)continue;
+  const below=oy+oh+gap, above=oy-gap;
+  if(below>y+h&&below<=photo.y+photo.h)add('bottom',[[cx,y+h],[cx,below],[endX,below]]);
+  if(above<y&&above>=photo.y)add('top',[[cx,y],[cx,above],[endX,above]]);
+ }
+ candidates.sort((a,b)=>a.score-b.score);
+ // Keep the ring alone if a future screenshot has no clear short connector.
+ return candidates[0]||null;
+}
+// Expand the visible ring only; preserve the original hit area and its center.
+function paddedRingBox(box,obstacles,bounds){
+ const [x,y,w,h]=box;
+ let pad=Math.min(3,x-bounds.x-2,y-bounds.y-2,bounds.x+bounds.w-x-w-2,bounds.y+bounds.h-y-h-2);
+ for(const [ox,oy,ow,oh] of obstacles){
+  const gap=Math.max(ox-x-w,x-ox-ow,oy-y-h,y-oy-oh);
+  pad=Math.min(pad,gap-2);
+ }
+ pad=Math.max(0,pad);
+ return [x-pad,y-pad,w+pad*2,h+pad*2];
+}
+function draw(){
+ const scene=$('scene'),phone=$('phone'),card=$('callout');if(!phone.clientWidth)return;
+ const page=pages[pageIndex],screen=activeScreen(), [x,y,w,h]=boxOnScreen(page,page.items[itemIndex],screen);
+ const stageRect=scene.getBoundingClientRect(),viewportRect=$('phoneViewport').getBoundingClientRect();
+ const sourceRect=phone.getBoundingClientRect(),scale=sourceRect.width/screen.width;
+ const stacked=window.matchMedia('(max-width:620px)').matches;
+ card.style.marginTop=stacked?'0px':Math.max(0,viewportRect.top-stageRect.top)+'px';
+ const sr=scene.getBoundingClientRect(),pr=phone.getBoundingClientRect(),cr=card.getBoundingClientRect();
+ const photo={x:pr.left-sr.left,y:pr.top-sr.top,w:pr.width,h:pr.height};
+ const transform=([bx,by,bw,bh])=>[photo.x+bx*scale,photo.y+by*scale,bw*scale,bh*scale];
+ const obstacles=page.items.filter((item,i)=>i!==itemIndex).map(item=>boxOnScreen(page,item,screen)).filter(Boolean).map(transform);
+ obstacles.push(...(screen.obstacles||[]).map(obstacle=>transform(obstacle.box)));
+ obstacles.push(transform([0,38,screen.width,48])); // time, camera island, signal and battery
+ const bounds={x:viewportRect.left-sr.left+3,y:viewportRect.top-sr.top+3,w:viewportRect.width-6,h:viewportRect.height-6};
+ const box=paddedRingBox(transform([x,y,w,h]),obstacles,bounds), [xx,yy,ww,hh]=box;
+ $('connectors').setAttribute('viewBox',`0 0 ${sr.width} ${sr.height}`);
+ for(const [k,v] of Object.entries({x:xx,y:yy,width:ww,height:hh,rx:page.items[itemIndex].shape==='circle'||Math.abs(ww-hh)<.01?Math.min(ww,hh)/2:Math.min(12,hh/3)}))$('ring').setAttribute(k,String(v));
+ if(stacked){$('leader').setAttribute('d','');$('dot').style.display='none';return;}
+
+ const end=[cr.left-sr.left,cr.top-sr.top+8,cr.bottom-sr.top-8];
+ const route=routeLeader(box,obstacles,photo,end,3*scale);
+ $('leader').setAttribute('d',route?route.points.map((p,i)=>`${i?'L':'M'} ${p[0]} ${p[1]}`).join(' '):'');
+ $('dot').style.display=route?'':'none';
+ if(route){const finish=route.points[route.points.length-1];$('dot').setAttribute('cx',String(finish[0]));$('dot').setAttribute('cy',String(finish[1]));}
+}
+const demoState=new Map();
+let targetsVisible=false;
+let motionBusy=false;
+let motionTimer=null;
+let motionLayers=[];
+let toastTimer=null;
+function animateElement(el,frames,options){
+ if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||!el.animate)return null;
+ return el.animate(frames,options);
+}
+function clearToast(){clearTimeout(toastTimer);$('actionTag').classList.remove('is-visible');$('actionTag').textContent='';}
+function announceAction(label){
+ clearToast();if(!label)return;
+ $('actionTag').textContent=label;$('actionTag').classList.add('is-visible');
+ toastTimer=setTimeout(()=>{$('actionTag').classList.remove('is-visible');},1500);
+}
+function displayMasks(screen){return [[0,0,screen.width,38,'#fff'],...screen.masks,...(screen.presentationMasks||[])];}
+function demoKey(page,item){return page.id+':'+(item.interaction.group||item.label);}
+function demoValue(page,item){const key=demoKey(page,item);return demoState.has(key)?demoState.get(key):item.interaction.initial;}
+function renderDemoState(button,page,item,box=item.box,rect=item.interaction?.rect){
+ const action=item.interaction;
+ if(!action||!['toggle','radio'].includes(action.type))return;
+ const [x,y,w,h]=rect,[bx,by,bw,bh]=box;
+ const selected=action.type==='toggle'?demoValue(page,item):demoValue(page,item)===action.value;
+ button.setAttribute('aria-pressed',String(selected));
+ const control=document.createElement('span');control.setAttribute('aria-hidden','true');
+ control.className=action.type==='toggle'?'demoSwitch':'demoRadio';
+ control.dataset.on=String(selected);
+ Object.assign(control.style,{left:(x-bx)/bw*100+'%',top:(y-by)/bh*100+'%',width:w/bw*100+'%',height:h/bh*100+'%'});
+ const knob=document.createElement('span');control.append(knob);button.append(control);
+}
+function renderHotspots(){
+ const page=pages[pageIndex],screen=activeScreen();
+ const host=$('hotspots');host.replaceChildren();
+ page.items.forEach((item,i)=>{
+  const alternate=item.interaction?.viewRects?.[String(screen.id)];
+  if((item.screen||page.id)!==screen.id&&!alternate)return;
+  const box=boxOnScreen(page,item,screen);
+  const [x,y,w,h]=box,b=document.createElement('button');
+  b.type='button';b.className='hotspot';b.dataset.index=String(i);b.dataset.selected=String(i===itemIndex);b.style.borderRadius=item.shape==='circle'||w===h?'50%':'min(12px, 33%)';
+  b.setAttribute('aria-label',item.label);b.setAttribute('aria-controls','callout');
+  renderDemoState(b,page,item,box,alternate||item.interaction?.rect);
+  Object.assign(b.style,{left:x/screen.width*100+'%',top:y/screen.height*100+'%',width:w/screen.width*100+'%',height:h/screen.height*100+'%'});
+  b.addEventListener('click',()=>activateItem(i));host.append(b);
+ });
+ $('phone').classList.toggle('show-targets',targetsVisible);
+ const pager=$('phonePager');pager.replaceChildren();
+ const continuation=page.continuation||{};
+ for(const [direction,label] of [['up','↑ 往上看'],['down','↓ 往下看']])if(continuation[direction]){
+  const b=document.createElement('button');b.textContent=label;b.addEventListener('click',()=>navigatePhone(continuation[direction],direction));pager.append(b);
+ }
+ if(page.views){
+  const ids=[page.id,...Object.keys(page.views).map(Number)];
+  for(const [n,id] of ids.entries()){
+   const b=document.createElement('button');b.textContent=n===0?'上半部':'下半部';b.disabled=screen.id===id;
+   b.addEventListener('click',()=>{const prev=activeScreen();showItem(page.items.findIndex(item=>(item.screen||page.id)===id));animateScreen(prev);});pager.append(b);
+  }
+ }
+}
+function restoreControlFocus(i){const b=[...$('hotspots').children].find(button=>Number(button.dataset.index)===i);b?.focus({preventScroll:true});}
+function activateItem(i){
+ if(motionBusy)return;
+ const keyboardFocus=document.activeElement?.className==='hotspot';
+ const page=pages[pageIndex],item=page.items[i],visibleId=activeScreen().id;
+ showItem(i,true,item.interaction?.viewRects?.[String(visibleId)]?visibleId:null);
+ const action=item.interaction;
+ if(action?.type==='toggle'||action?.type==='radio'){
+  const key=demoKey(page,item);
+  demoState.set(key,action.type==='toggle'?!demoValue(page,item):action.value);
+  renderHotspots();
+  announceAction(action.type==='toggle'?(demoValue(page,item)?'已開啟':'已關閉'):'已選擇：'+item.label);
+  if(keyboardFocus)restoreControlFocus(i);
+  return;
+ }
+ if(action?.type==='back'){
+  if(navDepth>0){history.back();return;}
+  navigatePhone(action.fallback,'back');return;
+ }
+ const destination=action?.type==='go'?action.target:item.go;
+ if(destination){navigatePhone(destination,'forward',item.label);return;}
+ announceAction(item.label);
+ if(keyboardFocus)restoreControlFocus(i);
+ // On a narrow page, put the explanation within view after a direct tap.
+ if(window.matchMedia?.('(max-width:620px)').matches)$('callout').scrollIntoView({block:'nearest',behavior:'auto'});
+}
+function screenLayer(screen){
+ const layer=document.createElement('div');layer.className='screenMotion';layer.setAttribute('aria-hidden','true');
+ const img=document.createElement('img');img.src=screen.image;img.alt='';layer.append(img);
+ for(const [x,y,w,h,color] of displayMasks(screen)){
+  const mask=document.createElement('span');mask.className='mask';
+  Object.assign(mask.style,{left:x/screen.width*100+'%',top:y/screen.height*100+'%',width:w/screen.width*100+'%',height:h/screen.height*100+'%',background:color});layer.append(mask);
+ }
+ return layer;
+}
+function clearMotion(){clearTimeout(motionTimer);motionLayers.forEach(layer=>layer.remove());motionLayers=[];motionBusy=false;}
+function animateScreen(previous){
+ if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||!$('phone').animate)return;
+ const next=activeScreen(),panel=pages[pageIndex].panel;
+ if(previous.id===next.id)return;
+ motionBusy=true;
+ const outgoing=screenLayer(previous);$('phone').append(outgoing);motionLayers.push(outgoing);
+ let incoming=null;
+ if(panel){
+  const [x,y,w,h]=panel.rect;incoming=screenLayer(next);
+  incoming.style.clipPath=`inset(${y/next.height*100}% ${(next.width-x-w)/next.width*100}% ${(next.height-y-h)/next.height*100}% ${x/next.width*100}%)`;
+  $('phone').append(incoming);motionLayers.push(incoming);
+  animateElement(incoming,[{opacity:0,transform:panel.enter==='left'?'translateX(-28px)':'translateY(22px)'},{opacity:1,transform:'none'}],{duration:260,easing:'cubic-bezier(.2,.7,.2,1)'});
+ }
+ animateElement(outgoing,[{opacity:1},{opacity:0}],{duration:panel?220:180,easing:'ease-out',fill:'forwards'});
+ clearTimeout(motionTimer);motionTimer=setTimeout(clearMotion,280);
+}
+function navigatePhone(id,direction='forward',label=''){
+ if(motionBusy)return;
+ const previous=activeScreen(),beforeScroll=window.scrollY||0;
+ showPage(id,true,0);
+ // Keep the phone in place while exploring, instead of jumping to the page toolbar.
+ window.scrollTo(0,beforeScroll);saveState();
+ animateScreen(previous);
+
+}
+$('showTargets').addEventListener('click',()=>{targetsVisible=!targetsVisible;$('showTargets').setAttribute('aria-pressed',String(targetsVisible));$('phone').classList.toggle('show-targets',targetsVisible);});
+$('restart').addEventListener('click',()=>navigatePhone(1));
+let touchStart=null;
+$('phone').addEventListener('touchstart',event=>{touchStart=event.touches.length===1?{x:event.touches[0].clientX,y:event.touches[0].clientY}:null;},{passive:true});
+$('phone').addEventListener('touchend',event=>{
+ if(!touchStart||motionBusy)return;
+ const touch=event.changedTouches[0],dy=touchStart.y-touch.clientY,dx=touchStart.x-touch.clientX;touchStart=null;
+ if(Math.abs(dy)<60||Math.abs(dy)<Math.abs(dx))return;
+ const direction=dy>0?'down':'up',target=pages[pageIndex].continuation?.[direction];
+ if(target)navigatePhone(target,direction);
+},{passive:true});
+
+$('screenSelect').addEventListener('change',e=>showPage(e.target.value));$('prev').addEventListener('click',()=>{if(pageIndex>0)showPage(pages[pageIndex-1].id)});$('next').addEventListener('click',()=>{if(pageIndex<pages.length-1)showPage(pages[pageIndex+1].id)});$('screenImage').addEventListener('load',()=>requestAnimationFrame(draw));window.addEventListener('resize',()=>requestAnimationFrame(draw));window.addEventListener('popstate',()=>{const previous=activeScreen();const st=history.state;if(st&&st.guide===stateKey){navDepth=st.depth;showPage(st.page,false,st.item,st.view);animateScreen(previous);requestAnimationFrame(()=>{window.scrollTo(0,st.scroll||0);const selected=[...$('hotspots').children].find(b=>Number(b.dataset.index)===st.item);selected?.focus({preventScroll:true});});}else{navDepth=0;const target=parseHash();showPage(target.page,false,target.item);saveState();}});window.addEventListener('hashchange',()=>{const target=parseHash();if(target.page!==pages[pageIndex].id||target.item!==itemIndex){navDepth=0;showPage(target.page,false,target.item);saveState();}});new ResizeObserver(()=>requestAnimationFrame(draw)).observe($('phone'));
+$('back').addEventListener('click',()=>{if(navDepth>0)history.back();});window.addEventListener('scroll',()=>{const st=history.state;if(st&&st.guide===stateKey)history.replaceState({...st,scroll:window.scrollY||0},'');},{passive:true});
+const initial=history.state&&history.state.guide===stateKey?history.state:parseHash();navDepth=initial.depth||0;showPage(initial.page,false,initial.item,initial.view);saveState();
+</script></body></html>
