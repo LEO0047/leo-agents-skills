@@ -65,6 +65,7 @@ scripts/check-drift.sh
 | Skill | 一句話 |
 |---|---|
 | [codex-handoff](skills/claude/codex-handoff/) | 把 Opus 的計畫轉成簡短可貼上的 Codex rescue handoff prompt |
+| [web-tool-reel](skills/claude/web-tool-reel/) | 逐格驅動自己的 WebGL 網站，做成跟音樂節拍對齊的 9:16 Reel（含渲染、驗收、交付腳本） |
 
 ### codex
 | Skill | 一句話 |
@@ -101,6 +102,8 @@ scripts/check-drift.sh
 2026-09-13 新增 9 個 Codex 技能，更新 1 個前端生圖技能。原始私人安裝保持不變；公開副本移除私人對話映射與固定使用者路徑，保留必要腳本／模板。依賴、命名差異和收錄範圍見 [同步說明](docs/LOCAL_SKILLS_SYNC.md)。
 
 同日另補上 Mac 本機 `voice-notes` 的音檔跳播預覽、字幕跨度修正與轉錄穩定性更新；公司名單、私人聲紋與案例不包含在這批公開副本。
+
+2026-10-13 新增 Claude 技能 `web-tool-reel`：整理自 Thermal Tracking 24 秒 Reel 的製作流程，附渲染器、音樂分析、素材前處理、驗收與 FCPXML 腳本，以及完整導演檔範例。
 
 ## 安裝（暫定，未自動化）
 
